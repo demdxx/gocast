@@ -3,7 +3,7 @@ GoCast
 
 Easily convert basic data types.
 
-```
+```go
 import "github.com/demdxx/gocast"
 
 // ...
