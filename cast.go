@@ -24,26 +24,35 @@ import (
 )
 
 func To(v, to interface{}) interface{} {
-  if nil == to {
+  if nil == v || nil == to {
     return nil
   }
 
   switch reflect.ValueOf(to).Kind() {
   case reflect.String:
-    val, _ := strconv.ParseInt(v.String(), 10, 64)
-    return val
-  case reflect.Array, reflect.Map, reflect.Slice:
-    return 0
+    return ToString(v)
   case reflect.Bool:
-    if v.Bool() {
-      return 1
-    } else {
-      return 0
-    }
-  case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+    return ToBool(v)
+  case reflect.Int:
     return ToInt(v)
-  case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+  case reflect.Int8:
+    return (int8)(ToInt(v))
+  case reflect.Int16:
+    return (int16)(ToInt(v))
+  case reflect.Int32:
+    return ToInt32(v)
+  case reflect.Int64:
+    return ToInt64(v)
+  case reflect.Uint:
     return ToUint(v)
+  case reflect.Uint8:
+    return (uint8)(ToUint(v))
+  case reflect.Uint16:
+    return (uint16)(ToUint(v))
+  case reflect.Uint32:
+    return ToUint32(v)
+  case reflect.Uint64:
+    return ToUint64(v)
   case reflect.Float32:
     return ToFloat32(v)
   case reflect.Float64:

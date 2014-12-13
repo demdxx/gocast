@@ -20,7 +20,6 @@
 package gocast
 
 import (
-  "errors"
   "reflect"
   "strings"
 )
@@ -37,7 +36,7 @@ func ToStruct(dst, src interface{}, tag string) (err error) {
       for i := 0; i < s.NumField(); i++ {
         f := s.Field(i)
         v := mapValueByStringKeys(src, fieldNames(t.Field(i), tag))
-        f.Set(v)
+        f.Set(reflect.ValueOf(v))
       }
       break
     case map[string]interface{}:
@@ -61,6 +60,8 @@ func ToStruct(dst, src interface{}, tag string) (err error) {
 /// MARK: Helpers
 ///////////////////////////////////////////////////////////////////////////////
 
+var fieldNameArr = []string{"field", "schema", "sql", "json", "xml", "yaml"}
+
 func fieldName(f reflect.StructField, tag string) string {
   return fieldNames(f, tag)[0]
 }
@@ -75,18 +76,17 @@ func fieldTag(f reflect.StructField, tag string) string {
     if len(tag) > 0 {
       fields = f.Tag.Get(tag)
     } else {
-      fields = f.Tag.Get("field")
-      if len(fields) < 1 {
-        fields = f.Tag.Get("json")
-      }
-      if len(fields) < 1 {
-        fields = f.Tag.Get("xml")
-      }
-      if len(fields) < 1 {
-        fields = f.Tag.Get("yaml")
+      for _, k := range fieldNameArr {
+        fields = f.Tag.Get(k)
+        if len(fields) > 0 {
+          break
+        }
       }
     }
     if len(fields) > 0 {
+      if "-" == fields {
+        return ""
+      }
       return fields
     }
   }

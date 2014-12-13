@@ -20,14 +20,12 @@
 package gocast
 
 import (
-  "errors"
   "reflect"
-  "strings"
 )
 
 func ToMapFrom(src interface{}, tag string) (map[interface{}]interface{}, error) {
   dst := make(map[interface{}]interface{})
-  err := ToMap(&dst, src)
+  err := ToMap(&dst, src, tag)
   return dst, err
 }
 
@@ -101,7 +99,8 @@ func mapValueByStringKeys(src interface{}, keys []string) interface{} {
     for k, v := range src.(map[string]string) {
       for _, ks := range keys {
         if k == ks {
-          return v.(interface{})
+          var i interface{} = v
+          return i
         }
       }
     }
