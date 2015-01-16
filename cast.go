@@ -27,8 +27,15 @@ func To(v, to interface{}) interface{} {
   if nil == v || nil == to {
     return nil
   }
+  return ToKind(v, reflect.ValueOf(to).Kind())
+}
 
-  switch reflect.ValueOf(to).Kind() {
+func ToKind(v interface{}, to reflect.Kind) interface{} {
+  if nil == v {
+    return nil
+  }
+
+  switch to {
   case reflect.String:
     return ToString(v)
   case reflect.Bool:

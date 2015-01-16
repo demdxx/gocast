@@ -28,25 +28,15 @@ func ToStruct(dst, src interface{}, tag string) (err error) {
   if nil == dst || nil == src {
     err = errInvalidParams
   } else {
-    s := reflect.ValueOf(dst).Elem()
+    s := reflectTarget(reflect.ValueOf(dst))
     t := s.Type()
 
     switch src.(type) {
-    case map[interface{}]interface{}:
+    case map[interface{}]interface{}, map[string]interface{}, map[string]string:
       for i := 0; i < s.NumField(); i++ {
         f := s.Field(i)
         v := mapValueByStringKeys(src, fieldNames(t.Field(i), tag))
-        f.Set(reflect.ValueOf(v))
-      }
-      break
-    case map[string]interface{}:
-      for i := 0; i < s.NumField(); i++ {
-        dst.(map[string]interface{})[fieldName(t.Field(i), tag)] = s.Field(i).Interface()
-      }
-      break
-    case map[string]string:
-      for i := 0; i < s.NumField(); i++ {
-        dst.(map[string]string)[fieldName(t.Field(i), tag)] = ToString(s.Field(i).Interface())
+        f.Set(reflect.ValueOf(To(v, f.Kind())))
       }
       break
     default:
@@ -54,6 +44,37 @@ func ToStruct(dst, src interface{}, tag string) (err error) {
     }
   }
   return
+}
+
+func StructFields(st interface{}, tag string) []string {
+  fields := []string{}
+
+  s := reflectTarget(reflect.ValueOf(st))
+  t := s.Type()
+
+  for i := 0; i < s.NumField(); i++ {
+    fname := fieldName(t.Field(i), tag)
+    if len(fname) > 0 && "-" != fname {
+      fields = append(fields, fname)
+    }
+  }
+  return fields
+}
+
+func StructFieldTags(st interface{}, tag string) map[string]string {
+  fields := map[string]string{}
+
+  s := reflectTarget(reflect.ValueOf(st))
+  t := s.Type()
+
+  for i := 0; i < s.NumField(); i++ {
+    f := t.Field(i)
+    tag := fieldTag(f, tag)
+    if len(tag) > 0 && "-" != tag {
+      fields[f.Name] = tag
+    }
+  }
+  return fields
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -73,16 +94,21 @@ func fieldNames(f reflect.StructField, tag string) []string {
 func fieldTag(f reflect.StructField, tag string) string {
   if "-" != tag {
     var fields string
+    var tags []string
+
     if len(tag) > 0 {
-      fields = f.Tag.Get(tag)
+      tags = strings.Split(tag, ",")
     } else {
-      for _, k := range fieldNameArr {
-        fields = f.Tag.Get(k)
-        if len(fields) > 0 {
-          break
-        }
+      tags = fieldNameArr
+    }
+
+    for _, k := range tags {
+      fields = f.Tag.Get(k)
+      if len(fields) > 0 {
+        break
       }
     }
+
     if len(fields) > 0 {
       if "-" == fields {
         return ""

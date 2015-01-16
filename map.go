@@ -25,7 +25,7 @@ import (
 
 func ToMapFrom(src interface{}, tag string) (map[interface{}]interface{}, error) {
   dst := make(map[interface{}]interface{})
-  err := ToMap(&dst, src, tag)
+  err := ToMap(dst, src, tag)
   return dst, err
 }
 
@@ -33,7 +33,8 @@ func ToMap(dst, src interface{}, tag string) (err error) {
   if nil == dst || nil == src {
     err = errInvalidParams
   } else {
-    s := reflect.ValueOf(&src).Elem()
+    dst = reflectTarget(reflect.ValueOf(dst)).Interface()
+    s := reflectTarget(reflect.ValueOf(src))
     t := s.Type()
 
     switch dst.(type) {

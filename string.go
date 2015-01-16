@@ -25,6 +25,9 @@ import (
 )
 
 func ToStringByReflect(v reflect.Value) string {
+  if !v.IsValid() {
+    return ""
+  }
   switch v.Kind() {
   case reflect.String:
     return v.String()
@@ -45,13 +48,14 @@ func ToStringByReflect(v reflect.Value) string {
 }
 
 func ToString(v interface{}) string {
+  if nil == v {
+    return ""
+  }
   switch v.(type) {
   case string:
     return v.(string)
-  case *string:
-    return *v.(*string)
   case []byte:
     return string(v.([]byte))
   }
-  return ToStringByReflect(reflect.ValueOf(v))
+  return ToStringByReflect(reflectTarget(reflect.ValueOf(v)))
 }
