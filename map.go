@@ -63,7 +63,7 @@ func ToMap(dst, src interface{}, tag string) (err error) {
     case map[string]string:
       if reflect.Map == t.Kind() {
         for _, k := range s.MapKeys() {
-          dst.(map[string]interface{})[ToString(k.Interface())] = ToString(s.MapIndex(k).Interface())
+          dst.(map[string]string)[ToString(k.Interface())] = ToString(s.MapIndex(k).Interface())
         }
       } else {
         for i := 0; i < s.NumField(); i++ {
