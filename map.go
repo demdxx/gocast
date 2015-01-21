@@ -39,18 +39,36 @@ func ToMap(dst, src interface{}, tag string) (err error) {
 
     switch dst.(type) {
     case map[interface{}]interface{}:
-      for i := 0; i < s.NumField(); i++ {
-        dst.(map[interface{}]interface{})[fieldName(t.Field(i), tag)] = s.Field(i).Interface()
+      if reflect.Map == t.Kind() {
+        for _, k := range s.MapKeys() {
+          dst.(map[interface{}]interface{})[k.Interface()] = s.MapIndex(k).Interface()
+        }
+      } else {
+        for i := 0; i < s.NumField(); i++ {
+          dst.(map[interface{}]interface{})[fieldName(t.Field(i), tag)] = s.Field(i).Interface()
+        }
       }
       break
     case map[string]interface{}:
-      for i := 0; i < s.NumField(); i++ {
-        dst.(map[string]interface{})[fieldName(t.Field(i), tag)] = s.Field(i).Interface()
+      if reflect.Map == t.Kind() {
+        for _, k := range s.MapKeys() {
+          dst.(map[string]interface{})[ToString(k.Interface())] = s.MapIndex(k).Interface()
+        }
+      } else {
+        for i := 0; i < s.NumField(); i++ {
+          dst.(map[string]interface{})[fieldName(t.Field(i), tag)] = s.Field(i).Interface()
+        }
       }
       break
     case map[string]string:
-      for i := 0; i < s.NumField(); i++ {
-        dst.(map[string]string)[fieldName(t.Field(i), tag)] = ToString(s.Field(i).Interface())
+      if reflect.Map == t.Kind() {
+        for _, k := range s.MapKeys() {
+          dst.(map[string]interface{})[ToString(k.Interface())] = ToString(s.MapIndex(k).Interface())
+        }
+      } else {
+        for i := 0; i < s.NumField(); i++ {
+          dst.(map[string]string)[fieldName(t.Field(i), tag)] = ToString(s.Field(i).Interface())
+        }
       }
       break
     default:
@@ -58,6 +76,18 @@ func ToMap(dst, src interface{}, tag string) (err error) {
     }
   }
   return
+}
+
+func ToSiMap(src interface{}, tag string) (map[string]interface{}, error) {
+  dst := make(map[string]interface{})
+  err := ToMap(dst, src, tag)
+  return dst, err
+}
+
+func ToStringMap(src interface{}, tag string) (map[string]string, error) {
+  dst := make(map[string]string)
+  err := ToMap(dst, src, tag)
+  return dst, err
 }
 
 ///////////////////////////////////////////////////////////////////////////////
