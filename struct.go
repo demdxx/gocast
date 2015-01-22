@@ -63,6 +63,17 @@ func StructFields(st interface{}, tag string) []string {
 
 func StructFieldTags(st interface{}, tag string) map[string]string {
   fields := map[string]string{}
+  keys, values := StructFieldTagsUnsorted(st, tag)
+
+  for i, k := range keys {
+    fields[k] = values[i]
+  }
+  return fields
+}
+
+func StructFieldTagsUnsorted(st interface{}, tag string) ([]string, []string) {
+  keys := []string{}
+  values := []string{}
 
   s := reflectTarget(reflect.ValueOf(st))
   t := s.Type()
@@ -71,10 +82,11 @@ func StructFieldTags(st interface{}, tag string) map[string]string {
     f := t.Field(i)
     tag := fieldTag(f, tag)
     if len(tag) > 0 && "-" != tag {
-      fields[f.Name] = tag
+      keys = append(keys, f.Name)
+      values = append(values, tag)
     }
   }
-  return fields
+  return keys, values
 }
 
 ///////////////////////////////////////////////////////////////////////////////
