@@ -43,7 +43,7 @@ func ToMap(dst, src interface{}, tag string) (err error) {
         for _, k := range s.MapKeys() {
           dst.(map[interface{}]interface{})[k.Interface()] = s.MapIndex(k).Interface()
         }
-      } else {
+      } else if reflect.Struct == t.Kind() {
         for i := 0; i < s.NumField(); i++ {
           dst.(map[interface{}]interface{})[fieldName(t.Field(i), tag)] = s.Field(i).Interface()
         }
@@ -54,7 +54,7 @@ func ToMap(dst, src interface{}, tag string) (err error) {
         for _, k := range s.MapKeys() {
           dst.(map[string]interface{})[ToString(k.Interface())] = s.MapIndex(k).Interface()
         }
-      } else {
+      } else if reflect.Struct == t.Kind() {
         for i := 0; i < s.NumField(); i++ {
           dst.(map[string]interface{})[fieldName(t.Field(i), tag)] = s.Field(i).Interface()
         }
@@ -65,7 +65,7 @@ func ToMap(dst, src interface{}, tag string) (err error) {
         for _, k := range s.MapKeys() {
           dst.(map[string]string)[ToString(k.Interface())] = ToString(s.MapIndex(k).Interface())
         }
-      } else {
+      } else if reflect.Struct == t.Kind() {
         for i := 0; i < s.NumField(); i++ {
           dst.(map[string]string)[fieldName(t.Field(i), tag)] = ToString(s.Field(i).Interface())
         }
