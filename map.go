@@ -47,6 +47,8 @@ func ToMap(dst, src interface{}, tag string) (err error) {
         for i := 0; i < s.NumField(); i++ {
           dst.(map[interface{}]interface{})[fieldName(t.Field(i), tag)] = s.Field(i).Interface()
         }
+      } else {
+        err = errUnsupportedSourceType
       }
       break
     case map[string]interface{}:
@@ -58,6 +60,8 @@ func ToMap(dst, src interface{}, tag string) (err error) {
         for i := 0; i < s.NumField(); i++ {
           dst.(map[string]interface{})[fieldName(t.Field(i), tag)] = s.Field(i).Interface()
         }
+      } else {
+        err = errUnsupportedSourceType
       }
       break
     case map[string]string:
@@ -69,6 +73,8 @@ func ToMap(dst, src interface{}, tag string) (err error) {
         for i := 0; i < s.NumField(); i++ {
           dst.(map[string]string)[fieldName(t.Field(i), tag)] = ToString(s.Field(i).Interface())
         }
+      } else {
+        err = errUnsupportedSourceType
       }
       break
     default:
