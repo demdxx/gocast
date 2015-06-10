@@ -53,7 +53,7 @@ func StructFields(st interface{}, tag string) []string {
   t := s.Type()
 
   for i := 0; i < s.NumField(); i++ {
-    fname := fieldName(t.Field(i), tag)
+    fname, _ := fieldName(t.Field(i), tag)
     if len(fname) > 0 && "-" != fname {
       fields = append(fields, fname)
     }
@@ -95,8 +95,15 @@ func StructFieldTagsUnsorted(st interface{}, tag string) ([]string, []string) {
 
 var fieldNameArr = []string{"field", "schema", "sql", "json", "xml", "yaml"}
 
-func fieldName(f reflect.StructField, tag string) string {
-  return fieldNames(f, tag)[0]
+func fieldName(f reflect.StructField, tag string) (name string, omitempty bool) {
+  names := fieldNames(f, tag)
+  name = names[0]
+  if len(names) > 0 {
+    if "omitempty" == names[len(names)-1] {
+      omitempty = true
+    }
+  }
+  return
 }
 
 func fieldNames(f reflect.StructField, tag string) []string {
