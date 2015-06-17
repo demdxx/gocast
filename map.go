@@ -52,17 +52,20 @@ func ToMap(dst, src interface{}, tag string, recursive bool) (err error) {
         }
       } else if reflect.Struct == t.Kind() {
         for i := 0; i < s.NumField(); i++ {
-          name, omitempty := fieldName(t.Field(i), tag)
-          if len(name) > 0 {
-            field := s.Field(i)
-            fl := getValue(field.Interface())
-            if !omitempty || !isEmpty(fl) {
-              if recursive {
-                dest[name] = mapDestValue(fl, destType, tag, recursive)
-              } else {
-                dest[name] = fl
-              }
-            } // end if !omitempty || !isEmpty(fl)
+          field := s.Field(i)
+          if field.CanSet() {
+            name, omitempty := fieldName(t.Field(i), tag)
+            if len(name) > 0 {
+              field := s.Field(i)
+              fl := getValue(field.Interface())
+              if !omitempty || !isEmpty(fl) {
+                if recursive {
+                  dest[name] = mapDestValue(fl, destType, tag, recursive)
+                } else {
+                  dest[name] = fl
+                }
+              } // end if !omitempty || !isEmpty(fl)
+            }
           } // end if
         }
       } else {
@@ -82,16 +85,19 @@ func ToMap(dst, src interface{}, tag string, recursive bool) (err error) {
         }
       } else if reflect.Struct == t.Kind() {
         for i := 0; i < s.NumField(); i++ {
-          name, omitempty := fieldName(t.Field(i), tag)
-          if len(name) > 0 {
-            fl := getValue(s.Field(i).Interface())
-            if !omitempty || !isEmpty(fl) {
-              if recursive {
-                dest[name] = mapDestValue(fl, destType, tag, recursive)
-              } else {
-                dest[name] = fl
-              }
-            } // end if !omitempty || !isEmpty(fl)
+          field := s.Field(i)
+          if field.CanSet() {
+            name, omitempty := fieldName(t.Field(i), tag)
+            if len(name) > 0 {
+              fl := getValue(field.Interface())
+              if !omitempty || !isEmpty(fl) {
+                if recursive {
+                  dest[name] = mapDestValue(fl, destType, tag, recursive)
+                } else {
+                  dest[name] = fl
+                }
+              } // end if !omitempty || !isEmpty(fl)
+            }
           } // end if
         }
       } else {
@@ -106,13 +112,16 @@ func ToMap(dst, src interface{}, tag string, recursive bool) (err error) {
         }
       } else if reflect.Struct == t.Kind() {
         for i := 0; i < s.NumField(); i++ {
-          name, omitempty := fieldName(t.Field(i), tag)
-          if len(name) > 0 {
-            fl := getValue(s.Field(i).Interface())
-            if !omitempty || !isEmpty(fl) {
-              dest[name] = ToString(fl)
-            }
-          } // end if
+          field := s.Field(i)
+          if field.CanSet() {
+            name, omitempty := fieldName(t.Field(i), tag)
+            if len(name) > 0 {
+              fl := getValue(s.Field(i).Interface())
+              if !omitempty || !isEmpty(fl) {
+                dest[name] = ToString(fl)
+              }
+            } // end if
+          }
         }
       } else {
         err = errUnsupportedSourceType
