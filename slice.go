@@ -19,6 +19,10 @@
 
 package gocast
 
+import (
+  "reflect"
+)
+
 func ToInterfaceSlice(v interface{}) []interface{} {
   switch v.(type) {
   case []interface{}:
@@ -85,6 +89,46 @@ func ToFloat64Slice(v interface{}) []float64 {
     })
     return result
   }
+}
+
+func ToSlice(dst, src interface{}, tags string) error {
+  if nil == dst || nil == src {
+    return errInvalidParams
+  }
+
+  dstSlice := reflectTarget(reflect.ValueOf(dst))
+  if reflect.Slice != dstSlice.Kind() {
+    return errInvalidParams
+  }
+
+  srcSlice := reflectTarget(reflect.ValueOf(src))
+  if reflect.Slice != srcSlice.Kind() {
+    return errInvalidParams
+  }
+
+  dstElemType := dstSlice.Type().Elem()
+
+  if dstSlice.Len() < srcSlice.Len() {
+    newv := reflect.MakeSlice(dstSlice.Type(), srcSlice.Len(), srcSlice.Len())
+    reflect.Copy(newv, dstSlice)
+    dstSlice.Set(newv)
+    dstSlice.SetLen(srcSlice.Len())
+  }
+
+  for i := 0; i < srcSlice.Len(); i++ {
+    it := srcSlice.Index(i)
+    if v, err := ToType(it, dstElemType, tags); nil == err {
+      val := reflect.ValueOf(v)
+      if dstElemType.Kind() != val.Kind() {
+        val = val.Elem()
+      }
+      dstSlice.Index(i).Set(val)
+    } else {
+      return err
+    }
+  }
+
+  return nil
 }
 
 ///////////////////////////////////////////////////////////////////////////////

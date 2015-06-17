@@ -20,14 +20,44 @@
 package gocast
 
 import (
+  "database/sql"
   "reflect"
   "strings"
+  "time"
 )
 
 func ToStruct(dst, src interface{}, tag string) (err error) {
   if nil == dst || nil == src {
     err = errInvalidParams
-  } else {
+    return
+  }
+
+  if sintf, ok := dst.(sql.Scanner); ok {
+    if nil == sintf.Scan(src) {
+      return
+    }
+  }
+
+  switch dst.(type) {
+  case time.Time, *time.Time:
+    switch v := src.(type) {
+    case string:
+      var tm time.Time
+      if tm, err = parseTime(v); nil == err {
+        s := reflectTarget(reflect.ValueOf(dst))
+        s.Set(reflect.ValueOf(tm))
+      }
+      break
+    case int64:
+      s := reflectTarget(reflect.ValueOf(dst))
+      s.Set(reflect.ValueOf(time.Unix(v, 0)))
+      break
+    default:
+      err = errUnsupportedType
+    }
+    break
+  default:
+
     s := reflectTarget(reflect.ValueOf(dst))
     t := s.Type()
 
@@ -35,14 +65,47 @@ func ToStruct(dst, src interface{}, tag string) (err error) {
     case map[interface{}]interface{}, map[string]interface{}, map[string]string:
       for i := 0; i < s.NumField(); i++ {
         f := s.Field(i)
-        v := mapValueByStringKeys(src, fieldNames(t.Field(i), tag))
-        f.Set(reflect.ValueOf(To(v, f.Kind())))
+        if f.CanSet() {
+          // Get passable field names
+          names := fieldNames(t.Field(i), tag)
+          if nil == names || len(names) < 1 {
+            continue
+          }
+
+          // Get value from map
+          v := mapValueByStringKeys(src, names)
+
+          // Set field value
+          if nil == v {
+            f.Set(reflect.Zero(f.Type()))
+          } else {
+            switch f.Kind() {
+            case reflect.Struct:
+              if err = ToStruct(f.Addr().Interface(), v, tag); nil != err {
+                return
+              }
+              break
+            default:
+              var vl interface{}
+              if vl, err = ToType(reflect.ValueOf(v), f.Type(), tag); nil == err {
+                val := reflect.ValueOf(vl)
+                if val.Kind() != f.Kind() {
+                  val = val.Elem()
+                }
+                f.Set(val)
+              } else {
+                return
+              }
+            } // end switch
+          } // end else
+        }
       }
       break
     default:
       err = errUnsupportedType
     }
   }
+
   return
 }
 
@@ -95,18 +158,32 @@ func StructFieldTagsUnsorted(st interface{}, tag string) ([]string, []string) {
 
 var fieldNameArr = []string{"field", "schema", "sql", "json", "xml", "yaml"}
 
+func fieldNames(f reflect.StructField, tag string) []string {
+  names := fieldTagArr(f, tag)
+  switch names[0] {
+  case "", "-":
+    return []string{f.Name}
+    break
+  default:
+  }
+  return []string{names[0], f.Name}
+}
+
 func fieldName(f reflect.StructField, tag string) (name string, omitempty bool) {
-  names := fieldNames(f, tag)
+  names := fieldTagArr(f, tag)
   name = names[0]
-  if len(names) > 0 {
+  if len(names) > 1 {
     if "omitempty" == names[len(names)-1] {
       omitempty = true
     }
   }
+  if "" == name {
+    name = f.Name
+  }
   return
 }
 
-func fieldNames(f reflect.StructField, tag string) []string {
+func fieldTagArr(f reflect.StructField, tag string) []string {
   return strings.Split(fieldTag(f, tag), ",")
 }
 
