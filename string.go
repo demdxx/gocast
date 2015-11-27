@@ -51,11 +51,11 @@ func ToString(v interface{}) string {
   if nil == v {
     return ""
   }
-  switch v.(type) {
+  switch s := v.(type) {
   case string:
-    return v.(string)
+    return s
   case []byte:
-    return string(v.([]byte))
+    return string(s)
   }
   return ToStringByReflect(reflectTarget(reflect.ValueOf(v)))
 }
