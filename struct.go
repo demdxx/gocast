@@ -97,10 +97,15 @@ func ToStruct(dst, src interface{}, tag string) (err error) {
 							var vl interface{}
 							if vl, err = ToType(reflect.ValueOf(v), f.Type(), tag); nil == err {
 								val := reflect.ValueOf(vl)
-								if val.Kind() != f.Kind() {
+								if val.Kind() == reflect.Ptr && val.Kind() != f.Kind() {
 									val = val.Elem()
 								}
-								f.Set(val)
+								if val.Kind() == f.Kind() {
+									f.Set(val)
+								} else {
+									err = errUnsupportedType
+									break
+								}
 							} else {
 								return
 							}
