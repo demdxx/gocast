@@ -22,6 +22,7 @@ package gocast
 import (
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 func ToInt64ByReflect(v reflect.Value) int64 {
