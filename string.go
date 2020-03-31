@@ -20,42 +20,79 @@
 package gocast
 
 import (
-  "fmt"
-  "reflect"
+	"fmt"
+	"reflect"
+	"strconv"
 )
 
+// ToStringByReflect converts reflection value to string
 func ToStringByReflect(v reflect.Value) string {
-  if !v.IsValid() {
-    return ""
-  }
-  switch v.Kind() {
-  case reflect.String:
-    return v.String()
-  case reflect.Bool:
-    if v.Bool() {
-      return "true"
-    } else {
-      return "false"
-    }
-  case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-    return fmt.Sprintf("%d", v.Int())
-  case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-    return fmt.Sprintf("%u", v.Uint())
-  case reflect.Float32, reflect.Float64:
-    return fmt.Sprintf("%f", v.Float())
-  }
-  return fmt.Sprintf("%v", v.Interface())
+	if !v.IsValid() {
+		return ``
+	}
+	switch v.Kind() {
+	case reflect.String:
+		return v.String()
+	case reflect.Slice:
+		if v.Type().Elem().Kind() == reflect.Uint8 {
+			return string(v.Bytes())
+		}
+	case reflect.Bool:
+		if v.Bool() {
+			return "true"
+		}
+		return "false"
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return strconv.FormatInt(v.Int(), 10)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return strconv.FormatUint(v.Uint(), 10)
+	case reflect.Float32, reflect.Float64:
+		return strconv.FormatFloat(v.Float(), 'G', -1, 64)
+	}
+	return fmt.Sprintf("%v", v.Interface())
 }
 
+// ToString from any type
 func ToString(v interface{}) string {
-  if nil == v {
-    return ""
-  }
-  switch s := v.(type) {
-  case string:
-    return s
-  case []byte:
-    return string(s)
-  }
-  return ToStringByReflect(reflectTarget(reflect.ValueOf(v)))
+	switch val := v.(type) {
+	case nil:
+		return ``
+	case string:
+		return val
+	case []byte:
+		return string(val)
+	case bool:
+		if val {
+			return "true"
+		}
+		return "false"
+	case int:
+		return strconv.FormatInt(int64(val), 10)
+	case int8:
+		return strconv.FormatInt(int64(val), 10)
+	case int16:
+		return strconv.FormatInt(int64(val), 10)
+	case int32:
+		return strconv.FormatInt(int64(val), 10)
+	case int64:
+		return strconv.FormatInt(val, 10)
+	case uint:
+		return strconv.FormatUint(uint64(val), 10)
+	case uint8:
+		return strconv.FormatUint(uint64(val), 10)
+	case uint16:
+		return strconv.FormatUint(uint64(val), 10)
+	case uint32:
+		return strconv.FormatUint(uint64(val), 10)
+	case uint64:
+		return strconv.FormatUint(val, 10)
+	case float32:
+		return strconv.FormatFloat(float64(val), 'G', -1, 64)
+	case float64:
+		return strconv.FormatFloat(val, 'G', -1, 64)
+	case reflect.Value:
+		return ToStringByReflect(reflectTarget(val))
+	}
+	val := reflectTarget(reflect.ValueOf(v))
+	return fmt.Sprintf("%v", val.Interface())
 }

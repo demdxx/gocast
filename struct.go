@@ -27,13 +27,13 @@ import (
 )
 
 func ToStruct(dst, src interface{}, tag string) (err error) {
-	if nil == dst || nil == src {
+	if dst == nil || src == nil {
 		err = errInvalidParams
 		return
 	}
 
 	if sintf, ok := dst.(sql.Scanner); ok {
-		if nil == sintf.Scan(src) {
+		if sintf.Scan(src) == nil {
 			return
 		}
 	}
@@ -51,7 +51,7 @@ func ToStruct(dst, src interface{}, tag string) (err error) {
 			break
 		case string:
 			var tm time.Time
-			if tm, err = ParseTime(v); nil == err {
+			if tm, err = ParseTime(v); err == nil {
 				s := reflectTarget(reflect.ValueOf(dst))
 				s.Set(reflect.ValueOf(tm))
 			}
@@ -76,7 +76,7 @@ func ToStruct(dst, src interface{}, tag string) (err error) {
 				if f.CanSet() {
 					// Get passable field names
 					names := fieldNames(t.Field(i), tag)
-					if nil == names || len(names) < 1 {
+					if len(names) < 1 {
 						continue
 					}
 
@@ -84,18 +84,18 @@ func ToStruct(dst, src interface{}, tag string) (err error) {
 					v := mapValueByStringKeys(src, names)
 
 					// Set field value
-					if nil == v {
+					if v == nil {
 						f.Set(reflect.Zero(f.Type()))
 					} else {
 						switch f.Kind() {
 						case reflect.Struct:
-							if err = ToStruct(f.Addr().Interface(), v, tag); nil != err {
+							if err = ToStruct(f.Addr().Interface(), v, tag); err != nil {
 								return
 							}
 							break
 						default:
 							var vl interface{}
-							if vl, err = ToType(reflect.ValueOf(v), f.Type(), tag); nil == err {
+							if vl, err = ToType(reflect.ValueOf(v), f.Type(), tag); err == nil {
 								val := reflect.ValueOf(vl)
 								if val.Kind() == reflect.Ptr && val.Kind() != f.Kind() {
 									val = val.Elem()

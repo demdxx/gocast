@@ -12,8 +12,9 @@ func reflectTarget(r reflect.Value) reflect.Value {
 	return r
 }
 
+// IsEmpty value
 func IsEmpty(v interface{}) bool {
-	if nil == v {
+	if v == nil {
 		return true
 	}
 	t := reflect.ValueOf(v)
@@ -21,20 +22,21 @@ func IsEmpty(v interface{}) bool {
 	case reflect.Slice, reflect.Map, reflect.String:
 		return t.Len() < 1
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return 0 == t.Int()
+		return t.Int() == 0
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return 0 == t.Uint()
+		return t.Uint() == 0
 	case reflect.Float32, reflect.Float64:
-		return 0 == t.Float()
+		return t.Float() == 0
 	}
 	return false
 }
 
 func getValue(v interface{}) interface{} {
-	if nil != v {
-		if vl, ok := v.(driver.Valuer); ok {
-			v, _ = vl.Value()
-		}
+	if v == nil {
+		return nil
+	}
+	if vl, ok := v.(driver.Valuer); ok {
+		v, _ = vl.Value()
 	}
 	return v
 }
