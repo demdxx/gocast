@@ -3,10 +3,11 @@ GoCast
 [![GoDoc](https://godoc.org/github.com/demdxx/gocast?status.svg)](https://godoc.org/github.com/demdxx/gocast)
 [![Build Status](https://api.travis-ci.org/demdxx/gocast.svg?branch=master)](https://travis-ci.org/demdxx/gocast)
 [![Go Report Card](https://goreportcard.com/badge/github.com/demdxx/gocast)](https://goreportcard.com/report/github.com/demdxx/gocast)
+[![Coverage Status](https://coveralls.io/repos/github/demdxx/gocast/badge.svg)](https://coveralls.io/github/demdxx/gocast)
 
 Easily convert basic types into any other basic types.
 
-## What is Cast?
+## What is GoCast?
 
 Cast is a library to convert between different GO types in a consistent and easy way.
 

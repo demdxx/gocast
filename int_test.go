@@ -8,7 +8,7 @@ func TestToInt(t *testing.T) {
 		target int
 	}{
 		{src: 120, target: 120},
-		{src: int64(121), target: 121},
+		{src: uint64(121), target: 121},
 		{src: 122., target: 122},
 		{src: "123", target: 123},
 		{src: "120.0", target: 120},
@@ -32,7 +32,7 @@ func TestToUInt(t *testing.T) {
 		target uint
 	}{
 		{src: 120, target: 120},
-		{src: int64(121), target: 121},
+		{src: uint64(121), target: 121},
 		{src: 122., target: 122},
 		{src: "123", target: 123},
 		{src: "120.0", target: 120},
