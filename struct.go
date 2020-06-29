@@ -26,15 +26,15 @@ import (
 	"time"
 )
 
+// ToStruct convert any input type into the target structure
 func ToStruct(dst, src interface{}, tag string) (err error) {
 	if dst == nil || src == nil {
-		err = errInvalidParams
-		return
+		return errInvalidParams
 	}
 
 	if sintf, ok := dst.(sql.Scanner); ok {
 		if sintf.Scan(src) == nil {
-			return
+			return nil
 		}
 	}
 
@@ -44,26 +44,21 @@ func ToStruct(dst, src interface{}, tag string) (err error) {
 		case time.Time:
 			s := reflectTarget(reflect.ValueOf(dst))
 			s.Set(reflect.ValueOf(v))
-			break
 		case *time.Time:
 			s := reflectTarget(reflect.ValueOf(dst))
 			s.Set(reflect.ValueOf(*v))
-			break
 		case string:
 			var tm time.Time
 			if tm, err = ParseTime(v); err == nil {
 				s := reflectTarget(reflect.ValueOf(dst))
 				s.Set(reflect.ValueOf(tm))
 			}
-			break
 		case int64:
 			s := reflectTarget(reflect.ValueOf(dst))
 			s.Set(reflect.ValueOf(time.Unix(v, 0)))
-			break
 		default:
 			err = errUnsupportedType
 		}
-		break
 	default:
 
 		s := reflectTarget(reflect.ValueOf(dst))
@@ -113,15 +108,14 @@ func ToStruct(dst, src interface{}, tag string) (err error) {
 					} // end else
 				}
 			}
-			break
 		default:
 			err = errUnsupportedType
 		}
 	}
-
-	return
+	return err
 }
 
+// StructFields returns the field names from the structure
 func StructFields(st interface{}, tag string) []string {
 	fields := []string{}
 
@@ -137,6 +131,7 @@ func StructFields(st interface{}, tag string) []string {
 	return fields
 }
 
+// StructFieldTags returns Map with key->tag matching
 func StructFieldTags(st interface{}, tag string) map[string]string {
 	fields := map[string]string{}
 	keys, values := StructFieldTagsUnsorted(st, tag)
@@ -147,6 +142,7 @@ func StructFieldTags(st interface{}, tag string) map[string]string {
 	return fields
 }
 
+// StructFieldTagsUnsorted returns field names and tag targets separately
 func StructFieldTagsUnsorted(st interface{}, tag string) ([]string, []string) {
 	keys := []string{}
 	values := []string{}
@@ -176,7 +172,6 @@ func fieldNames(f reflect.StructField, tag string) []string {
 	switch names[0] {
 	case "", "-":
 		return []string{f.Name}
-		break
 	default:
 	}
 	return []string{names[0], f.Name}
@@ -185,12 +180,10 @@ func fieldNames(f reflect.StructField, tag string) []string {
 func fieldName(f reflect.StructField, tag string) (name string, omitempty bool) {
 	names := fieldTagArr(f, tag)
 	name = names[0]
-	if len(names) > 1 {
-		if "omitempty" == names[len(names)-1] {
-			omitempty = true
-		}
+	if len(names) > 1 && names[len(names)-1] == "omitempty" {
+		omitempty = true
 	}
-	if "" == name {
+	if name == "" {
 		name = f.Name
 	}
 	return
@@ -201,25 +194,24 @@ func fieldTagArr(f reflect.StructField, tag string) []string {
 }
 
 func fieldTag(f reflect.StructField, tag string) string {
-	if "-" != tag {
-		var fields string
-		var tags []string
-
+	if tag != "-" {
+		var (
+			fields string
+			tags   []string
+		)
 		if len(tag) > 0 {
 			tags = strings.Split(tag, ",")
 		} else {
 			tags = fieldNameArr
 		}
-
 		for _, k := range tags {
 			fields = f.Tag.Get(k)
 			if len(fields) > 0 {
 				break
 			}
 		}
-
 		if len(fields) > 0 {
-			if "-" == fields {
+			if fields == "-" {
 				return ""
 			}
 			return fields

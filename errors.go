@@ -1,12 +1,13 @@
 package gocast
 
 import (
-  "errors"
+	"errors"
 )
 
+// Error list...
 var (
-  errInvalidParams         = errors.New("Invalid params")
-  errUnsupportedType       = errors.New("Unsupported destination type")
-  errUnsupportedSourceType = errors.New("Unsupported source type")
-  ErrUnsettableValue       = errors.New("Can't set value")
+	errInvalidParams         = errors.New("invalid params")
+	errUnsupportedType       = errors.New("unsupported destination type")
+	errUnsupportedSourceType = errors.New("unsupported source type")
+	ErrUnsettableValue       = errors.New("can't set value")
 )

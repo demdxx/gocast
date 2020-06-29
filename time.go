@@ -38,9 +38,9 @@ var timeFormats = []string{
 // ParseTime from string
 func ParseTime(tm string) (t time.Time, err error) {
 	for _, f := range timeFormats {
-		if t, err = time.Parse(f, tm); nil == err {
+		if t, err = time.Parse(f, tm); err == nil {
 			break
 		}
 	}
-	return
+	return t, err
 }

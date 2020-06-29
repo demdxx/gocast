@@ -1,18 +1,53 @@
 GoCast
 ======
+[![GoDoc](https://godoc.org/github.com/demdxx/gocast?status.svg)](https://godoc.org/github.com/demdxx/gocast)
+[![Build Status](https://api.travis-ci.org/demdxx/gocast.svg?branch=master)](https://travis-ci.org/demdxx/gocast)
+[![Go Report Card](https://goreportcard.com/badge/github.com/demdxx/gocast)](https://goreportcard.com/report/github.com/demdxx/gocast)
 
-Easily convert basic data types.
+Easily convert basic types into any other basic types.
+
+## What is Cast?
+
+Cast is a library to convert between different GO types in a consistent and easy way.
+
+The library provides a set of methods with the universal casting of types.
+All casting methods starts from `To{TargetType}`.
+
+## Usage example
 
 ```go
 import "github.com/demdxx/gocast"
 
-// ...
+// Example ToString:
+gocast.ToString("strasstr")         // "strasstr"
+gocast.ToString(8)                  // "8"
+gocast.ToString(8.31)               // "8.31"
+gocast.ToString([]byte("one time")) // "one time"
+gocast.ToString(nil)                // ""
 
-func foo(v1, v2 interface{}) int {
-  return gocast.ToInt(v1) + gocast.ToInt(v2)
+var foo interface{} = "one more time"
+gocast.ToString(foo)                // "one more time"
+
+// Example ToInt:
+gocast.ToInt(8)                  // 8
+gocast.ToInt(8.31)               // 8
+gocast.ToInt("8")                // 8
+gocast.ToInt(true)               // 1
+gocast.ToInt(false)              // 0
+
+var eight interface{} = 8
+gocast.ToInt(eight)              // 8
+gocast.ToInt(nil)                // 0
+```
+
+```go
+func sumAll(vals ...interface{}) int {
+  var result int = 0
+  for _, v := range vals {
+    result += gocast.ToInt(v)
+  }
+  return result
 }
-
-// ...
 ```
 
 License

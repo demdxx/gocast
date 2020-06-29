@@ -20,41 +20,50 @@
 package gocast
 
 import (
-  "reflect"
-  "strconv"
+	"reflect"
+	"strconv"
 )
 
+// ToFloat64ByReflect returns float64 from reflection
 func ToFloat64ByReflect(v reflect.Value) float64 {
-  switch v.Kind() {
-  case reflect.String:
-    val, _ := strconv.ParseFloat(v.String(), 64)
-    return val
-  case reflect.Array, reflect.Map, reflect.Slice:
-    return 0
-  case reflect.Bool:
-    if v.Bool() {
-      return 1
-    } else {
-      return 0
-    }
-  case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-    return float64(v.Int())
-  case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-    return float64(v.Uint())
-  case reflect.Float32, reflect.Float64:
-    return v.Float()
-  }
-  return 0
+	switch v.Kind() {
+	case reflect.String:
+		val, _ := strconv.ParseFloat(v.String(), 64)
+		return val
+	case reflect.Bool:
+		if v.Bool() {
+			return 1.
+		}
+		return 0.
+	case reflect.Slice:
+		switch v.Type().Elem().Kind() {
+		case reflect.Uint8:
+			str := string(v.Interface().([]byte))
+			fval, _ := strconv.ParseFloat(str, 64)
+			return fval
+		default:
+		}
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return float64(v.Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return float64(v.Uint())
+	case reflect.Float32, reflect.Float64:
+		return v.Float()
+	}
+	return 0.
 }
 
+// ToFloat64 from any other basic types
 func ToFloat64(v interface{}) float64 {
-  return ToFloat64ByReflect(reflect.ValueOf(v))
+	return ToFloat64ByReflect(reflect.ValueOf(v))
 }
 
+// ToFloat32 from any other basic types
 func ToFloat32(v interface{}) float32 {
-  return float32(ToInt64ByReflect(reflect.ValueOf(v)))
+	return float32(ToInt64ByReflect(reflect.ValueOf(v)))
 }
 
+// ToFloat from any other basic types
 func ToFloat(v interface{}) float64 {
-  return ToFloat64ByReflect(reflect.ValueOf(v))
+	return ToFloat64ByReflect(reflect.ValueOf(v))
 }

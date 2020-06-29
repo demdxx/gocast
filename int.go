@@ -25,24 +25,36 @@ import (
 	"strings"
 )
 
+// ToInt64ByReflect returns int64 from reflection
 func ToInt64ByReflect(v reflect.Value) int64 {
 	switch v.Kind() {
 	case reflect.String:
 		var val int64
-		if strings.Contains(v.Interface().(string), ".") {
-			fval, _ := strconv.ParseFloat(v.Interface().(string), 64)
+		if strings.Contains(v.String(), ".") {
+			fval, _ := strconv.ParseFloat(v.String(), 64)
 			val = int64(fval)
 		} else {
-			val, _ = strconv.ParseInt(v.Interface().(string), 10, 64)
+			val, _ = strconv.ParseInt(v.String(), 10, 64)
 		}
 		return val
-	case reflect.Array, reflect.Map, reflect.Slice:
-		return 0
 	case reflect.Bool:
 		if v.Bool() {
 			return 1
-		} else {
-			return 0
+		}
+		return 0
+	case reflect.Slice:
+		switch v.Type().Elem().Kind() {
+		case reflect.Uint8:
+			var val int64
+			str := string(v.Interface().([]byte))
+			if strings.Contains(str, ".") {
+				fval, _ := strconv.ParseFloat(str, 64)
+				val = int64(fval)
+			} else {
+				val, _ = strconv.ParseInt(str, 10, 64)
+			}
+			return val
+		default:
 		}
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return v.Int()
@@ -54,20 +66,22 @@ func ToInt64ByReflect(v reflect.Value) int64 {
 	return 0
 }
 
+// ToInt64 from any other basic types
 func ToInt64(v interface{}) int64 {
 	return ToInt64ByReflect(reflect.ValueOf(v))
 }
 
+// ToInt32 from any other basic types
 func ToInt32(v interface{}) int32 {
 	return int32(ToInt64ByReflect(reflect.ValueOf(v)))
 }
 
+// ToInt from any other basic types
 func ToInt(v interface{}) int {
 	return int(ToInt64ByReflect(reflect.ValueOf(v)))
 }
 
-/// MARK: Int64
-
+// ToUint64ByReflect returns uint64 from reflection
 func ToUint64ByReflect(v reflect.Value) uint64 {
 	switch v.Kind() {
 	case reflect.String:
@@ -79,13 +93,24 @@ func ToUint64ByReflect(v reflect.Value) uint64 {
 			val, _ = strconv.ParseUint(v.Interface().(string), 10, 64)
 		}
 		return val
-	case reflect.Array, reflect.Map, reflect.Slice:
-		return 0
 	case reflect.Bool:
 		if v.Bool() {
 			return 1
-		} else {
-			return 0
+		}
+		return 0
+	case reflect.Slice:
+		switch v.Type().Elem().Kind() {
+		case reflect.Uint8:
+			var val uint64
+			str := string(v.Interface().([]byte))
+			if strings.Contains(str, ".") {
+				fval, _ := strconv.ParseFloat(str, 64)
+				val = uint64(fval)
+			} else {
+				val, _ = strconv.ParseUint(str, 10, 64)
+			}
+			return val
+		default:
 		}
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return uint64(v.Int())
@@ -97,14 +122,17 @@ func ToUint64ByReflect(v reflect.Value) uint64 {
 	return 0
 }
 
+// ToUint64 from any other basic types
 func ToUint64(v interface{}) uint64 {
 	return ToUint64ByReflect(reflect.ValueOf(v))
 }
 
+// ToUint32 from any other basic types
 func ToUint32(v interface{}) uint32 {
 	return uint32(ToUint64ByReflect(reflect.ValueOf(v)))
 }
 
+// ToUint from any other basic types
 func ToUint(v interface{}) uint {
 	return uint(ToUint64ByReflect(reflect.ValueOf(v)))
 }
