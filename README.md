@@ -1,7 +1,7 @@
 GoCast
 ======
 [![GoDoc](https://godoc.org/github.com/demdxx/gocast?status.svg)](https://godoc.org/github.com/demdxx/gocast)
-[![Build Status](https://api.travis-ci.org/demdxx/gocast.svg?branch=master)](https://travis-ci.org/demdxx/gocast)
+[![Build Status](https://github.com/demdxx/gocast/workflows/run%20tests/badge.svg)](https://github.com/demdxx/gocast/actions?workflow=run%20tests)
 [![Go Report Card](https://goreportcard.com/badge/github.com/demdxx/gocast)](https://goreportcard.com/report/github.com/demdxx/gocast)
 [![Coverage Status](https://coveralls.io/repos/github/demdxx/gocast/badge.svg)](https://coveralls.io/github/demdxx/gocast)
 
@@ -39,6 +39,9 @@ gocast.ToInt(false)              // 0
 var eight interface{} = 8
 gocast.ToInt(eight)              // 8
 gocast.ToInt(nil)                // 0
+
+gocast.ToFloat32("2.12")         // 2.12
+gocast.ToFloat64("2.")           // 2.0
 ```
 
 ```go

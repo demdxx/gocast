@@ -25,9 +25,9 @@ import (
 
 // ToInterfaceSlice converts any input slice into Interface type slice
 func ToInterfaceSlice(v interface{}) []interface{} {
-	switch v.(type) {
+	switch sv := v.(type) {
 	case []interface{}:
-		return v.([]interface{})
+		return sv
 	default:
 		var result []interface{} = nil
 		eachSlice(v, func(length int) {
@@ -43,9 +43,9 @@ func ToInterfaceSlice(v interface{}) []interface{} {
 
 // ToStringSlice converts any input slice into String type slice
 func ToStringSlice(v interface{}) []string {
-	switch v.(type) {
+	switch sv := v.(type) {
 	case []string:
-		return v.([]string)
+		return sv
 	default:
 		var result []string = nil
 		eachSlice(v, func(length int) {
@@ -61,9 +61,9 @@ func ToStringSlice(v interface{}) []string {
 
 // ToIntSlice converts any input slice into Int type slice
 func ToIntSlice(v interface{}) []int {
-	switch v.(type) {
+	switch sv := v.(type) {
 	case []int:
-		return v.([]int)
+		return sv
 	default:
 		var result []int = nil
 		eachSlice(v, func(length int) {
@@ -79,9 +79,9 @@ func ToIntSlice(v interface{}) []int {
 
 // ToFloat64Slice converts any input slice into Float64 type slice
 func ToFloat64Slice(v interface{}) []float64 {
-	switch v.(type) {
+	switch sv := v.(type) {
 	case []float64:
-		return v.([]float64)
+		return sv
 	default:
 		var result []float64 = nil
 		eachSlice(v, func(length int) {
@@ -141,98 +141,87 @@ func ToSlice(dst, src interface{}, tags string) error {
 ///////////////////////////////////////////////////////////////////////////////
 
 func eachSlice(v interface{}, fi func(length int), f func(v interface{}, i int)) {
-	switch v.(type) {
+	switch sv := v.(type) {
 	case []interface{}:
 		if fi != nil {
-			fi(len(v.([]interface{})))
+			fi(len(sv))
 		}
-		for i, v := range v.([]interface{}) {
+		for i, v := range sv {
 			f(v, i)
 		}
-		break
 		// String
 	case []string:
 		if fi != nil {
-			fi(len(v.([]string)))
+			fi(len(sv))
 		}
-		for i, v := range v.([]string) {
+		for i, v := range sv {
 			f((interface{})(v), i)
 		}
-		break
 		// Numeric
 	case []int:
 		if fi != nil {
-			fi(len(v.([]int)))
+			fi(len(sv))
 		}
-		for i, v := range v.([]int) {
+		for i, v := range sv {
 			f((interface{})(v), i)
 		}
-		break
 	case []int64:
 		if fi != nil {
-			fi(len(v.([]int64)))
+			fi(len(sv))
 		}
-		for i, v := range v.([]int64) {
+		for i, v := range sv {
 			f((interface{})(v), i)
 		}
-		break
 	case []int32:
 		if fi != nil {
-			fi(len(v.([]int32)))
+			fi(len(sv))
 		}
-		for i, v := range v.([]int32) {
+		for i, v := range sv {
 			f((interface{})(v), i)
 		}
-		break
 		// Unsigned numeric
 	case []uint:
 		if fi != nil {
-			fi(len(v.([]uint)))
+			fi(len(sv))
 		}
-		for i, v := range v.([]uint) {
+		for i, v := range sv {
 			f((interface{})(v), i)
 		}
-		break
 	case []uint64:
 		if fi != nil {
-			fi(len(v.([]uint64)))
+			fi(len(sv))
 		}
-		for i, v := range v.([]uint64) {
+		for i, v := range sv {
 			f((interface{})(v), i)
 		}
-		break
 	case []uint32:
 		if fi != nil {
-			fi(len(v.([]uint32)))
+			fi(len(sv))
 		}
-		for i, v := range v.([]uint32) {
+		for i, v := range sv {
 			f((interface{})(v), i)
 		}
-		break
 		// Float numeric
 	case []float32:
 		if fi != nil {
-			fi(len(v.([]float32)))
+			fi(len(sv))
 		}
-		for i, v := range v.([]float32) {
+		for i, v := range sv {
 			f((interface{})(v), i)
 		}
-		break
 	case []float64:
 		if fi != nil {
-			fi(len(v.([]float64)))
+			fi(len(sv))
 		}
-		for i, v := range v.([]float64) {
+		for i, v := range sv {
 			f((interface{})(v), i)
 		}
-		break
 	case []bool:
 		if fi != nil {
-			fi(len(v.([]bool)))
+			fi(len(sv))
 		}
-		for i, v := range v.([]bool) {
+		for i, v := range sv {
 			f((interface{})(v), i)
 		}
-		break
 	}
 }

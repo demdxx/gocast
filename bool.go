@@ -20,30 +20,86 @@
 package gocast
 
 import (
+	"bytes"
 	"reflect"
 )
 
+var bytesType = reflect.TypeOf([]byte(nil))
+
 // ToBoolByReflect returns boolean from reflection
 func ToBoolByReflect(v reflect.Value) bool {
+	if !v.IsValid() {
+		return false
+	}
 	switch v.Kind() {
 	case reflect.String:
 		val := v.String()
 		return val == "1" || val == "true" || val == "t"
-	case reflect.Array, reflect.Map, reflect.Slice:
-		return 0 != v.Len()
+	case reflect.Slice:
+		if v.Type() == bytesType {
+			bv := v.Interface().([]byte)
+			return len(bv) != 0 && (false ||
+				bytes.Equal(bv, []byte("1")) ||
+				bytes.Equal(bv, []byte("true")) ||
+				bytes.Equal(bv, []byte("t")))
+		}
+		return v.Len() != 0
+	case reflect.Array, reflect.Map:
+		return v.Len() != 0
 	case reflect.Bool:
 		return v.Bool()
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return 0 != v.Int()
+		return v.Int() != 0
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return 0 != v.Uint()
+		return v.Uint() != 0
 	case reflect.Float32, reflect.Float64:
-		return 0 != v.Float()
+		return v.Float() != 0
 	}
 	return false
 }
 
 // ToBool from any other basic types
 func ToBool(v interface{}) bool {
+	switch bv := v.(type) {
+	case string:
+		return bv == "1" || bv == "true" || bv == "t"
+	case []byte:
+		return len(bv) != 0 && (false ||
+			bytes.Equal(bv, []byte("1")) ||
+			bytes.Equal(bv, []byte("true")) ||
+			bytes.Equal(bv, []byte("t")))
+	case bool:
+		return bv
+	case int:
+		return bv != 0
+	case int8:
+		return bv != 0
+	case int16:
+		return bv != 0
+	case int32:
+		return bv != 0
+	case int64:
+		return bv != 0
+	case uint:
+		return bv != 0
+	case uint8:
+		return bv != 0
+	case uint16:
+		return bv != 0
+	case uint32:
+		return bv != 0
+	case uint64:
+		return bv != 0
+	case uintptr:
+		return bv != 0
+	case float32:
+		return bv != 0
+	case float64:
+		return bv != 0
+	case []int:
+		return len(bv) != 0
+	case []interface{}:
+		return len(bv) != 0
+	}
 	return ToBoolByReflect(reflect.ValueOf(v))
 }

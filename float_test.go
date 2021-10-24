@@ -20,8 +20,15 @@ func TestToFloat(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if ToFloat64(test.src) != test.target {
-			t.Errorf("target must be equal %v != %f", test.target, test.target)
+		if v := ToFloat64(test.src); v != test.target {
+			t.Errorf("target must be equal %v != %f", test.src, test.target)
 		}
+	}
+}
+
+func BenchmarkToFloat(b *testing.B) {
+	values := []interface{}{120, int64(122), "123", "120.0", "120.", []byte("125."), true, false}
+	for n := 0; n < b.N; n++ {
+		_ = ToFloat(values[n%len(values)])
 	}
 }

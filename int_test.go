@@ -26,6 +26,13 @@ func TestToInt(t *testing.T) {
 	}
 }
 
+func BenchmarkToInt(b *testing.B) {
+	values := []interface{}{120, uint64(122), "123", "120.0", "-120.", []byte("125."), true, false}
+	for n := 0; n < b.N; n++ {
+		_ = ToInt(values[n%len(values)])
+	}
+}
+
 func TestToUInt(t *testing.T) {
 	var tests = []struct {
 		src    interface{}
@@ -47,5 +54,12 @@ func TestToUInt(t *testing.T) {
 		if ToUint(test.src) != test.target {
 			t.Errorf("target must be equal %v != %d", test.target, test.target)
 		}
+	}
+}
+
+func BenchmarkToUint(b *testing.B) {
+	values := []interface{}{120, int64(122), "123", "120.0", "120.", []byte("125."), true, false}
+	for n := 0; n < b.N; n++ {
+		_ = ToUint(values[n%len(values)])
 	}
 }

@@ -68,17 +68,74 @@ func ToInt64ByReflect(v reflect.Value) int64 {
 
 // ToInt64 from any other basic types
 func ToInt64(v interface{}) int64 {
-	return ToInt64ByReflect(reflect.ValueOf(v))
+	switch iv := v.(type) {
+	case int:
+		return int64(iv)
+	case int8:
+		return int64(iv)
+	case int16:
+		return int64(iv)
+	case int32:
+		return int64(iv)
+	case int64:
+		return iv
+	case uint:
+		return int64(iv)
+	case uint8:
+		return int64(iv)
+	case uint16:
+		return int64(iv)
+	case uint32:
+		return int64(iv)
+	case uint64:
+		return int64(iv)
+	case uintptr:
+		return int64(iv)
+	case float32:
+		return int64(iv)
+	case float64:
+		return int64(iv)
+	case bool:
+		if iv {
+			return 1
+		}
+		return 0
+	case string:
+		var val int64
+		if strings.Contains(iv, ".") {
+			fval, _ := strconv.ParseFloat(iv, 64)
+			val = int64(fval)
+		} else {
+			val, _ = strconv.ParseInt(iv, 10, 64)
+		}
+		return val
+	case []byte:
+		var val int64
+		str := string(iv)
+		if strings.Contains(str, ".") {
+			fval, _ := strconv.ParseFloat(str, 64)
+			val = int64(fval)
+		} else {
+			val, _ = strconv.ParseInt(str, 10, 64)
+		}
+		return val
+	}
+	return 0
 }
 
 // ToInt32 from any other basic types
 func ToInt32(v interface{}) int32 {
-	return int32(ToInt64ByReflect(reflect.ValueOf(v)))
+	return int32(ToInt64(v))
+}
+
+// ToInt16 from any other basic types
+func ToInt16(v interface{}) int16 {
+	return int16(ToInt64(v))
 }
 
 // ToInt from any other basic types
 func ToInt(v interface{}) int {
-	return int(ToInt64ByReflect(reflect.ValueOf(v)))
+	return int(ToInt64(v))
 }
 
 // ToUint64ByReflect returns uint64 from reflection
@@ -124,15 +181,72 @@ func ToUint64ByReflect(v reflect.Value) uint64 {
 
 // ToUint64 from any other basic types
 func ToUint64(v interface{}) uint64 {
-	return ToUint64ByReflect(reflect.ValueOf(v))
+	switch iv := v.(type) {
+	case int:
+		return uint64(iv)
+	case int8:
+		return uint64(iv)
+	case int16:
+		return uint64(iv)
+	case int32:
+		return uint64(iv)
+	case int64:
+		return uint64(iv)
+	case uint:
+		return uint64(iv)
+	case uint8:
+		return uint64(iv)
+	case uint16:
+		return uint64(iv)
+	case uint32:
+		return uint64(iv)
+	case uint64:
+		return iv
+	case uintptr:
+		return uint64(iv)
+	case float32:
+		return uint64(iv)
+	case float64:
+		return uint64(iv)
+	case bool:
+		if iv {
+			return 1
+		}
+		return 0
+	case string:
+		var val uint64
+		if strings.Contains(iv, ".") {
+			fval, _ := strconv.ParseFloat(iv, 64)
+			val = uint64(fval)
+		} else {
+			val, _ = strconv.ParseUint(iv, 10, 64)
+		}
+		return val
+	case []byte:
+		var val uint64
+		str := string(iv)
+		if strings.Contains(str, ".") {
+			fval, _ := strconv.ParseFloat(str, 64)
+			val = uint64(fval)
+		} else {
+			val, _ = strconv.ParseUint(str, 10, 64)
+		}
+		return val
+	}
+	return 0
 }
 
 // ToUint32 from any other basic types
 func ToUint32(v interface{}) uint32 {
-	return uint32(ToUint64ByReflect(reflect.ValueOf(v)))
+	return uint32(ToUint64(v))
+}
+
+// ToUint32 from any other basic types
+func ToUint16(v interface{}) uint32 {
+	return uint32(ToUint64(v))
 }
 
 // ToUint from any other basic types
 func ToUint(v interface{}) uint {
-	return uint(ToUint64ByReflect(reflect.ValueOf(v)))
+	return uint(ToUint64(v))
 }

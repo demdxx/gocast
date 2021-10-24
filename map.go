@@ -109,7 +109,6 @@ func ToMap(dst, src interface{}, tag string, recursive bool) error {
 		default:
 			err = errUnsupportedSourceType
 		}
-		break
 	case map[string]string:
 		switch {
 		case reflect.Map == t.Kind():
@@ -156,21 +155,10 @@ func ToStringMap(src interface{}, tag string, recursive bool) (map[string]string
 /// MARK: Helpers
 ///////////////////////////////////////////////////////////////////////////////
 
-func mapValueByKeys(src interface{}, keys []interface{}) interface{} {
-	if src == nil || keys == nil {
-		return nil
-	}
-	sKeys := make([]string, len(keys))
-	for i, v := range keys {
-		sKeys[i] = ToString(v)
-	}
-	return mapValueByStringKeys(src, sKeys)
-}
-
 func mapValueByStringKeys(src interface{}, keys []string) interface{} {
-	switch src.(type) {
+	switch m := src.(type) {
 	case map[interface{}]interface{}:
-		for k, v := range src.(map[interface{}]interface{}) {
+		for k, v := range m {
 			skey := ToString(k)
 			for _, ks := range keys {
 				if skey == ks {
@@ -179,7 +167,7 @@ func mapValueByStringKeys(src interface{}, keys []string) interface{} {
 			}
 		}
 	case map[string]interface{}:
-		for k, v := range src.(map[string]interface{}) {
+		for k, v := range m {
 			for _, ks := range keys {
 				if k == ks {
 					return v
@@ -187,7 +175,7 @@ func mapValueByStringKeys(src interface{}, keys []string) interface{} {
 			}
 		}
 	case map[string]string:
-		for k, v := range src.(map[string]string) {
+		for k, v := range m {
 			for _, ks := range keys {
 				if k == ks {
 					var i interface{} = v
@@ -216,13 +204,11 @@ func mapDestValue(fl interface{}, destType reflect.Type, tag string, recursive b
 				return list
 			}
 		}
-		break
 	case reflect.Map, reflect.Struct:
 		var v interface{} = reflect.New(destType)
 		if ToMap(v, fl, tag, recursive) == nil {
 			return v
 		}
-		break
 	}
 	return fl
 }

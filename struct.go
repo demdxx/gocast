@@ -85,9 +85,8 @@ func ToStruct(dst, src interface{}, tag string) (err error) {
 						switch f.Kind() {
 						case reflect.Struct:
 							if err = ToStruct(f.Addr().Interface(), v, tag); err != nil {
-								return
+								return err
 							}
-							break
 						default:
 							var vl interface{}
 							if vl, err = ToType(reflect.ValueOf(v), f.Type(), tag); err == nil {
@@ -102,7 +101,7 @@ func ToStruct(dst, src interface{}, tag string) (err error) {
 									break
 								}
 							} else {
-								return
+								return err
 							}
 						} // end switch
 					} // end else
@@ -124,7 +123,7 @@ func StructFields(st interface{}, tag string) []string {
 
 	for i := 0; i < s.NumField(); i++ {
 		fname, _ := fieldName(t.Field(i), tag)
-		if len(fname) > 0 && "-" != fname {
+		if len(fname) > 0 && fname != "-" {
 			fields = append(fields, fname)
 		}
 	}
@@ -153,7 +152,7 @@ func StructFieldTagsUnsorted(st interface{}, tag string) ([]string, []string) {
 	for i := 0; i < s.NumField(); i++ {
 		f := t.Field(i)
 		tag := fieldTag(f, tag)
-		if len(tag) > 0 && "-" != tag {
+		if len(tag) > 0 && tag != "-" {
 			keys = append(keys, f.Name)
 			values = append(values, tag)
 		}
@@ -194,28 +193,29 @@ func fieldTagArr(f reflect.StructField, tag string) []string {
 }
 
 func fieldTag(f reflect.StructField, tag string) string {
-	if tag != "-" {
-		var (
-			fields string
-			tags   []string
-		)
-		if len(tag) > 0 {
-			tags = strings.Split(tag, ",")
-		} else {
-			tags = fieldNameArr
+	if tag == "-" {
+		return f.Name
+	}
+	var (
+		fields string
+		tags   []string
+	)
+	if tag != "" {
+		tags = strings.Split(tag, ",")
+	} else {
+		tags = fieldNameArr
+	}
+	for _, k := range tags {
+		fields = f.Tag.Get(k)
+		if fields != "" {
+			break
 		}
-		for _, k := range tags {
-			fields = f.Tag.Get(k)
-			if len(fields) > 0 {
-				break
-			}
+	}
+	if fields != "" {
+		if fields == "-" {
+			return ""
 		}
-		if len(fields) > 0 {
-			if fields == "-" {
-				return ""
-			}
-			return fields
-		}
+		return fields
 	}
 	return f.Name
 }

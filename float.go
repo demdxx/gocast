@@ -55,15 +55,55 @@ func ToFloat64ByReflect(v reflect.Value) float64 {
 
 // ToFloat64 from any other basic types
 func ToFloat64(v interface{}) float64 {
-	return ToFloat64ByReflect(reflect.ValueOf(v))
+	switch iv := v.(type) {
+	case int:
+		return float64(iv)
+	case int8:
+		return float64(iv)
+	case int16:
+		return float64(iv)
+	case int32:
+		return float64(iv)
+	case int64:
+		return float64(iv)
+	case uint:
+		return float64(iv)
+	case uint8:
+		return float64(iv)
+	case uint16:
+		return float64(iv)
+	case uint32:
+		return float64(iv)
+	case uint64:
+		return float64(iv)
+	case uintptr:
+		return float64(iv)
+	case float32:
+		return float64(iv)
+	case float64:
+		return float64(iv)
+	case bool:
+		if iv {
+			return 1
+		}
+		return 0
+	case string:
+		val, _ := strconv.ParseFloat(iv, 64)
+		return val
+	case []byte:
+		str := string(iv)
+		val, _ := strconv.ParseFloat(str, 64)
+		return val
+	}
+	return 0
 }
 
 // ToFloat32 from any other basic types
 func ToFloat32(v interface{}) float32 {
-	return float32(ToInt64ByReflect(reflect.ValueOf(v)))
+	return float32(ToFloat64(v))
 }
 
 // ToFloat from any other basic types
 func ToFloat(v interface{}) float64 {
-	return ToFloat64ByReflect(reflect.ValueOf(v))
+	return ToFloat64(v)
 }
