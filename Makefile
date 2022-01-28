@@ -19,8 +19,7 @@ test: ## Run tests
 
 .PHONY: bench
 bench: ## Run benchmarks
-	go test -bench=.
-
+	go test -benchmem -v -race -bench=.
 
 .PHONY: lint
 lint: $(GOLANGLINTCI) ## Run linter

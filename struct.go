@@ -24,6 +24,14 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
+)
+
+// Structure method errors
+var (
+	ErrStructFieldNameUndefined      = errors.New("struct field name undefined")
+	ErrStructFieldValueCantBeChanged = errors.New("struct field value cant be changed")
 )
 
 // ToStruct convert any input type into the target structure
@@ -158,6 +166,35 @@ func StructFieldTagsUnsorted(st interface{}, tag string) ([]string, []string) {
 		}
 	}
 	return keys, values
+}
+
+// StructFieldValue returns the value of the struct field
+func StructFieldValue(st interface{}, name string) (interface{}, error) {
+	s := reflectTarget(reflect.ValueOf(st))
+	t := s.Type()
+	for i := 0; i < s.NumField(); i++ {
+		if t.Field(i).Name == name {
+			return s.Field(i).Interface(), nil
+		}
+	}
+	return nil, errors.Wrap(ErrStructFieldNameUndefined, name)
+}
+
+// SetStructFieldValue puts value into the struct field
+func SetStructFieldValue(st interface{}, name string, value interface{}) error {
+	s := reflectTarget(reflect.ValueOf(st))
+	t := s.Type()
+	for i := 0; i < s.NumField(); i++ {
+		if t.Field(i).Name == name {
+			field := s.Field(i)
+			if !field.CanSet() {
+				return errors.Wrap(ErrStructFieldValueCantBeChanged, name)
+			}
+			field.Set(reflect.ValueOf(value))
+			return nil
+		}
+	}
+	return errors.Wrap(ErrStructFieldNameUndefined, name)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
