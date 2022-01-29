@@ -172,10 +172,8 @@ func StructFieldTagsUnsorted(st interface{}, tag string) ([]string, []string) {
 func StructFieldValue(st interface{}, name string) (interface{}, error) {
 	s := reflectTarget(reflect.ValueOf(st))
 	t := s.Type()
-	for i := 0; i < s.NumField(); i++ {
-		if t.Field(i).Name == name {
-			return s.Field(i).Interface(), nil
-		}
+	if _, ok := t.FieldByName(name); ok {
+		return s.FieldByName(name).Interface(), nil
 	}
 	return nil, errors.Wrap(ErrStructFieldNameUndefined, name)
 }
@@ -184,15 +182,13 @@ func StructFieldValue(st interface{}, name string) (interface{}, error) {
 func SetStructFieldValue(st interface{}, name string, value interface{}) error {
 	s := reflectTarget(reflect.ValueOf(st))
 	t := s.Type()
-	for i := 0; i < s.NumField(); i++ {
-		if t.Field(i).Name == name {
-			field := s.Field(i)
-			if !field.CanSet() {
-				return errors.Wrap(ErrStructFieldValueCantBeChanged, name)
-			}
-			field.Set(reflect.ValueOf(value))
-			return nil
+	if _, ok := t.FieldByName(name); ok {
+		field := s.FieldByName(name)
+		if !field.CanSet() {
+			return errors.Wrap(ErrStructFieldValueCantBeChanged, name)
 		}
+		field.Set(reflect.ValueOf(value))
+		return nil
 	}
 	return errors.Wrap(ErrStructFieldNameUndefined, name)
 }

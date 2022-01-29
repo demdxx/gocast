@@ -27,3 +27,25 @@ func TestStructGetSetFieldValue(t *testing.T) {
 	_, err = StructFieldValue(st, "UndefinedField")
 	assert.Error(t, err, "get UndefinedField value must be error")
 }
+
+func BenchmarkGetSetFieldValue(b *testing.B) {
+	st := &struct{ Name string }{}
+
+	b.Run("set", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			err := SetStructFieldValue(st, "Name", "value")
+			if err != nil {
+				b.Error("set field error", err.Error())
+			}
+		}
+	})
+
+	b.Run("get", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_, err := StructFieldValue(st, "Name")
+			if err != nil {
+				b.Error("get field error", err.Error())
+			}
+		}
+	})
+}
