@@ -140,7 +140,7 @@ func ToSlice(dst, src interface{}, tags string) error {
 /// Helpers
 ///////////////////////////////////////////////////////////////////////////////
 
-func eachSlice(v interface{}, fi func(length int), f func(v interface{}, i int)) {
+func eachSlice(v interface{}, fi func(length int), f func(v interface{}, i int)) bool {
 	switch sv := v.(type) {
 	case []interface{}:
 		if fi != nil {
@@ -223,5 +223,18 @@ func eachSlice(v interface{}, fi func(length int), f func(v interface{}, i int))
 		for i, v := range sv {
 			f((interface{})(v), i)
 		}
+	default:
+		rVal := reflect.ValueOf(sv)
+		if k := rVal.Kind(); k == reflect.Slice || k == reflect.Array {
+			if fi != nil {
+				fi(rVal.Len())
+			}
+			for i := 0; i < rVal.Len(); i++ {
+				f(rVal.Index(i).Interface(), i)
+			}
+		} else {
+			return false
+		}
 	}
+	return true
 }
