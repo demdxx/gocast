@@ -80,23 +80,30 @@ fmt.Printf("User: %d - %s", id, email)
 > go test -benchmem -v -race -bench=.
 
 BenchmarkToBool
-BenchmarkToBool-8               34045201                44.23 ns/op            0 B/op          0 allocs/op
+BenchmarkToBool-8               33395844                45.11 ns/op             0 B/op          0 allocs/op
 BenchmarkToBoolByReflect
-BenchmarkToBoolByReflect-8      19063656                62.12 ns/op            0 B/op          0 allocs/op
+BenchmarkToBoolByReflect-8      18987478                62.63 ns/op             0 B/op          0 allocs/op
 BenchmarkToFloat
-BenchmarkToFloat-8              17534598                69.61 ns/op            2 B/op          0 allocs/op
+BenchmarkToFloat-8              17713164                69.99 ns/op             2 B/op          0 allocs/op
 BenchmarkToInt
-BenchmarkToInt-8                17316328                68.66 ns/op            2 B/op          0 allocs/op
+BenchmarkToInt-8                17450060                68.53 ns/op             2 B/op          0 allocs/op
 BenchmarkToUint
-BenchmarkToUint-8               17812291                66.71 ns/op            2 B/op          0 allocs/op
+BenchmarkToUint-8               18079708                71.63 ns/op             2 B/op          0 allocs/op
 BenchmarkToStringByReflect
-BenchmarkToStringByReflect-8      485696              2108 ns/op               6 B/op          0 allocs/op
+BenchmarkToStringByReflect-8      562077              2215 ns/op       6 B/op           0 allocs/op
 BenchmarkToString
-BenchmarkToString-8               532069              1950 ns/op               6 B/op          0 allocs/op
+BenchmarkToString-8               561738              2006 ns/op               6 B/op        0 allocs/op
+BenchmarkGetSetFieldValue
+BenchmarkGetSetFieldValue/set
+BenchmarkGetSetFieldValue/set-8                  1918180               632.8 ns/op            32 B/op          2 allocs/op
+BenchmarkGetSetFieldValue/get
+BenchmarkGetSetFieldValue/get-8                  1830236               699.7 ns/op            48 B/op          3 allocs/op
 BenchmarkParseTime
-BenchmarkParseTime-8              695787              1671 ns/op             464 B/op          5 allocs/op
+BenchmarkParseTime-8                              692756              1755 ns/op             464 B/op          5 allocs/op
 BenchmarkIsEmpty
-BenchmarkIsEmpty-8              24910284                46.36 ns/op            0 B/op          0 allocs/op
+BenchmarkIsEmpty-8                              25146710                59.18 ns/op            0 B/op          0 allocs/op
+PASS
+ok      github.com/demdxx/gocast        17.823s
 ```
 
 License

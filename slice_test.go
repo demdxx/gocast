@@ -78,7 +78,7 @@ func TestToSlice(t *testing.T) {
 			trg: []int{1, 2, 6, 1, 999, 1},
 			cfn: func(v interface{}) interface{} {
 				arr := []int{}
-				ToSlice(&arr, v, "")
+				_ = ToSlice(&arr, v, "")
 				return arr
 			},
 		},
