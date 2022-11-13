@@ -21,18 +21,66 @@ package gocast
 
 import (
 	"reflect"
+
+	"github.com/pkg/errors"
 )
 
-// ToMapFrom any Map/Object type
-func ToMapFrom(src interface{}, tag string, recursive bool) (map[interface{}]interface{}, error) {
-	dst := make(map[interface{}]interface{})
-	err := ToMap(dst, src, tag, recursive)
-	return dst, err
+// TryMapCopy converts source into destination or return error
+func TryMapCopy[K comparable, V any](dst map[K]V, src any, recursive bool, tags ...string) error {
+	if dst == nil || src == nil {
+		return errInvalidParams
+	}
+	var (
+		s = reflectTarget(reflect.ValueOf(src))
+		t = s.Type()
+	)
+	switch {
+	case reflect.Map == t.Kind():
+		for _, k := range s.MapKeys() {
+			field := s.MapIndex(k)
+			key, err := TryCast[K](k.Interface())
+			if err == nil {
+				if recursive {
+					dst[key], err = TryCastRecursive[V](field.Interface(), tags...)
+				} else {
+					dst[key], err = TryCast[V](field.Interface(), tags...)
+				}
+			}
+			if err != nil {
+				return err
+			}
+		}
+	case reflect.Struct == t.Kind():
+		for i := 0; i < s.NumField(); i++ {
+			name, omitempty := fieldNameFromTags(t.Field(i), tags...)
+			if len(name) > 0 {
+				key, err := TryCast[K](name)
+				if err != nil {
+					return err
+				}
+				field := s.Field(i)
+				fl := getValue(field.Interface())
+				if !omitempty || !IsEmpty(fl) {
+					if recursive {
+						dst[key], err = TryCastRecursive[V](fl, tags...)
+					} else {
+						dst[key], err = TryCast[V](fl, tags...)
+					}
+					if err != nil {
+						return err
+					}
+				} // end if !omitempty || !IsEmpty(fl)
+			}
+		}
+	default:
+		return errors.Wrap(errUnsupportedSourceType, t.String())
+	}
+	return nil
 }
 
 // ToMap cast your Source into the Destination type
 // tag defines the tags name in the structure to map the keys
-func ToMap(dst, src interface{}, tag string, recursive bool) error {
+func ToMap(dst, src any, recursive bool, tags ...string) error {
 	if dst == nil || src == nil {
 		return errInvalidParams
 	}
@@ -46,65 +94,72 @@ func ToMap(dst, src interface{}, tag string, recursive bool) error {
 	dst = reflectTarget(reflect.ValueOf(dst)).Interface()
 
 	switch dest := dst.(type) {
-	case map[interface{}]interface{}:
+	case map[any]any:
 		switch {
 		case reflect.Map == t.Kind():
 			for _, k := range s.MapKeys() {
 				field := s.MapIndex(k)
 				if recursive {
-					dest[k.Interface()] = mapDestValue(field.Interface(), destType, tag, recursive)
+					dest[k.Interface()], err = mapDestValue(field.Interface(), destType, recursive, tags...)
+					if err != nil {
+						return err
+					}
 				} else {
 					dest[k.Interface()] = field.Interface()
 				}
 			}
 		case reflect.Struct == t.Kind():
 			for i := 0; i < s.NumField(); i++ {
-				field := s.Field(i)
-				if field.CanSet() {
-					name, omitempty := fieldName(t.Field(i), tag)
-					if len(name) > 0 {
-						field := s.Field(i)
-						fl := getValue(field.Interface())
-						if !omitempty || !IsEmpty(fl) {
-							if recursive {
-								dest[name] = mapDestValue(fl, destType, tag, recursive)
-							} else {
-								dest[name] = fl
+				name, omitempty := fieldNameFromTags(t.Field(i), tags...)
+				if len(name) > 0 {
+					field := s.Field(i)
+					fl := getValue(field.Interface())
+					if !omitempty || !IsEmpty(fl) {
+						if recursive {
+							dest[name], err = mapDestValue(fl, destType, recursive, tags...)
+							if err != nil {
+								return err
 							}
-						} // end if !omitempty || !IsEmpty(fl)
-					}
-				} // end if
+						} else {
+							dest[name] = fl
+						}
+					} // end if !omitempty || !IsEmpty(fl)
+				}
 			}
 		default:
 			err = errUnsupportedSourceType
 		}
-	case map[string]interface{}:
+	case map[string]any:
 		switch {
 		case reflect.Map == t.Kind():
 			for _, k := range s.MapKeys() {
 				field := s.MapIndex(k)
 				if recursive {
-					dest[ToString(k.Interface())] = mapDestValue(field.Interface(), destType, tag, recursive)
+					dest[ToString(k.Interface())], err = mapDestValue(field.Interface(), destType, recursive, tags...)
+					if err != nil {
+						return err
+					}
 				} else {
 					dest[ToString(k.Interface())] = field.Interface()
 				}
 			}
 		case reflect.Struct == t.Kind():
 			for i := 0; i < s.NumField(); i++ {
-				field := s.Field(i)
-				if field.CanSet() {
-					name, omitempty := fieldName(t.Field(i), tag)
-					if len(name) > 0 {
-						fl := getValue(field.Interface())
-						if !omitempty || !IsEmpty(fl) {
-							if recursive {
-								dest[name] = mapDestValue(fl, destType, tag, recursive)
-							} else {
-								dest[name] = fl
+				name, omitempty := fieldNameFromTags(t.Field(i), tags...)
+				if len(name) > 0 {
+					field := s.Field(i)
+					fl := getValue(field.Interface())
+					if !omitempty || !IsEmpty(fl) {
+						if recursive {
+							dest[name], err = mapDestValue(fl, destType, recursive, tags...)
+							if err != nil {
+								return err
 							}
-						} // end if !omitempty || !IsEmpty(fl)
-					}
-				} // end if
+						} else {
+							dest[name] = fl
+						}
+					} // end if !omitempty || !IsEmpty(fl)
+				}
 			}
 		default:
 			err = errUnsupportedSourceType
@@ -117,16 +172,13 @@ func ToMap(dst, src interface{}, tag string, recursive bool) error {
 			}
 		case reflect.Struct == t.Kind():
 			for i := 0; i < s.NumField(); i++ {
-				field := s.Field(i)
-				if field.CanSet() {
-					name, omitempty := fieldName(t.Field(i), tag)
-					if len(name) > 0 {
-						fl := getValue(s.Field(i).Interface())
-						if !omitempty || !IsEmpty(fl) {
-							dest[name] = ToString(fl)
-						}
-					} // end if
-				}
+				name, omitempty := fieldNameFromTags(t.Field(i), tags...)
+				if len(name) > 0 {
+					fl := getValue(s.Field(i).Interface())
+					if !omitempty || !IsEmpty(fl) {
+						dest[name] = ToString(fl)
+					}
+				} // end if
 			}
 		default:
 			err = errUnsupportedSourceType
@@ -137,36 +189,72 @@ func ToMap(dst, src interface{}, tag string, recursive bool) error {
 	return err
 }
 
-// ToSiMap converts input Map/Object type into the map[string]interface{}
-func ToSiMap(src interface{}, tag string, recursive bool) (map[string]interface{}, error) {
-	dst := make(map[string]interface{})
-	err := ToMap(dst, src, tag, recursive)
+// TryMapFrom source creates new map to convert
+func TryMapFrom[K comparable, V any](src any, recursive bool, tags ...string) (map[K]V, error) {
+	dst := make(map[K]V)
+	err := TryMapCopy(dst, src, recursive, tags...)
 	return dst, err
 }
 
-// ToStringMap converts input Map/Object type into the map[string]string
-func ToStringMap(src interface{}, tag string, recursive bool) (map[string]string, error) {
-	dst := make(map[string]string)
-	err := ToMap(dst, src, tag, recursive)
+// TryMapRecursive creates new map to convert from soruce type with recursive field processing
+func TryMapRecursive[K comparable, V any](src any, tags ...string) (map[K]V, error) {
+	return TryMapFrom[K, V](src, true, tags...)
+}
+
+// TryMap creates new map to convert from soruce type
+func TryMap[K comparable, V any](src any, tags ...string) (map[K]V, error) {
+	return TryMapFrom[K, V](src, false, tags...)
+}
+
+// MapRecursive creates map from source or returns nil
+func MapRecursive[K comparable, V any](src any, tags ...string) map[K]V {
+	m, _ := TryMapRecursive[K, V](src, tags...)
+	return m
+}
+
+// Map creates map from source or returns nil
+func Map[K comparable, V any](src any, tags ...string) map[K]V {
+	m, _ := TryMap[K, V](src, tags...)
+	return m
+}
+
+// ToMapFrom any Map/Object type
+func ToMapFrom(src any, recursive bool, tags ...string) (map[any]any, error) {
+	dst := make(map[any]any)
+	err := ToMap(dst, src, recursive, tags...)
 	return dst, err
+}
+
+// ToSiMap converts input Map/Object type into the map[string]any
+//
+// Deprecated: Use TryMapFrom[string, any](...) instead
+func ToSiMap(src any, recursive bool, tags ...string) (map[string]any, error) {
+	return TryMapFrom[string, any](src, recursive, tags...)
+}
+
+// ToStringMap converts input Map/Object type into the map[string]string
+//
+// Deprecated: Use TryMapFrom[string, string](...) instead
+func ToStringMap(src any, recursive bool, tags ...string) (map[string]string, error) {
+	return TryMapFrom[string, string](src, recursive, tags...)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 /// MARK: Helpers
 ///////////////////////////////////////////////////////////////////////////////
 
-func mapValueByStringKeys(src interface{}, keys []string) interface{} {
+func mapValueByStringKeys(src any, keys []string) any {
 	switch m := src.(type) {
-	case map[interface{}]interface{}:
+	case map[any]any:
 		for k, v := range m {
-			skey := ToString(k)
+			skey := Str(k)
 			for _, ks := range keys {
 				if skey == ks {
 					return v
 				}
 			}
 		}
-	case map[string]interface{}:
+	case map[string]any:
 		for k, v := range m {
 			for _, ks := range keys {
 				if k == ks {
@@ -178,7 +266,7 @@ func mapValueByStringKeys(src interface{}, keys []string) interface{} {
 		for k, v := range m {
 			for _, ks := range keys {
 				if k == ks {
-					var i interface{} = v
+					var i any = v
 					return i
 				}
 			}
@@ -187,28 +275,30 @@ func mapValueByStringKeys(src interface{}, keys []string) interface{} {
 	return nil
 }
 
-func mapDestValue(fl interface{}, destType reflect.Type, tag string, recursive bool) interface{} {
+func mapDestValue(fl any, destType reflect.Type, recursive bool, tags ...string) (any, error) {
 	field := reflect.ValueOf(fl)
 	switch field.Kind() {
 	case reflect.Slice:
 		if field.Len() > 0 {
 			switch field.Index(0).Kind() {
 			case reflect.Map, reflect.Struct:
-				list := make([]interface{}, field.Len())
+				list := make([]any, field.Len())
 				for i := 0; i < field.Len(); i++ {
-					var v interface{} = reflect.New(destType)
-					if ToMap(v, field.Index(i), tag, recursive) == nil {
-						list = append(list, v)
+					var v any = reflect.New(destType)
+					if err := ToMap(v, field.Index(i), recursive, tags...); err != nil {
+						return nil, err
 					}
+					list = append(list, v)
 				}
-				return list
+				return list, nil
 			}
 		}
 	case reflect.Map, reflect.Struct:
-		var v interface{} = reflect.New(destType)
-		if ToMap(v, fl, tag, recursive) == nil {
-			return v
+		var v any = reflect.New(destType)
+		if err := ToMap(v, fl, recursive, tags...); err != nil {
+			return nil, err
 		}
+		return v, nil
 	}
-	return fl
+	return fl, nil
 }

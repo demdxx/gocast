@@ -23,18 +23,45 @@ import (
 	"reflect"
 )
 
+// TrySlice converts one type of array to other or resturns error
+func TrySlice[R any, S any](src []S, tags ...string) (res []R, err error) {
+	res = make([]R, len(src))
+	switch srcArr := any(src).(type) {
+	case []R:
+		copy(res, srcArr)
+	default:
+		for i, v := range src {
+			var newVal R
+			if newVal, err = TryCast[R](v); err != nil {
+				return nil, err
+			} else {
+				res[i] = newVal
+			}
+		}
+	}
+	return res, nil
+}
+
+// Slice converts one type of array to other or resturns nil if not compatible
+func Slice[R any, S any](src []S, tags ...string) []R {
+	res, _ := TrySlice[R](src, tags...)
+	return res
+}
+
 // ToInterfaceSlice converts any input slice into Interface type slice
-func ToInterfaceSlice(v interface{}) []interface{} {
+//
+// Deprecated: Use Slice[any](v) instead
+func ToInterfaceSlice(v any) []any {
 	switch sv := v.(type) {
-	case []interface{}:
+	case []any:
 		return sv
 	default:
-		var result []interface{} = nil
+		var result []any = nil
 		eachSlice(v, func(length int) {
 			if length > 0 {
-				result = make([]interface{}, length)
+				result = make([]any, length)
 			}
-		}, func(v interface{}, i int) {
+		}, func(v any, i int) {
 			result[i] = v
 		})
 		return result
@@ -42,7 +69,9 @@ func ToInterfaceSlice(v interface{}) []interface{} {
 }
 
 // ToStringSlice converts any input slice into String type slice
-func ToStringSlice(v interface{}) []string {
+//
+// Deprecated: Use Slice[string](v) instead
+func ToStringSlice(v any) []string {
 	switch sv := v.(type) {
 	case []string:
 		return sv
@@ -52,7 +81,7 @@ func ToStringSlice(v interface{}) []string {
 			if length > 0 {
 				result = make([]string, length)
 			}
-		}, func(v interface{}, i int) {
+		}, func(v any, i int) {
 			result[i] = ToString(v)
 		})
 		return result
@@ -60,7 +89,9 @@ func ToStringSlice(v interface{}) []string {
 }
 
 // ToIntSlice converts any input slice into Int type slice
-func ToIntSlice(v interface{}) []int {
+//
+// Deprecated: Use Slice[int](v) instead
+func ToIntSlice(v any) []int {
 	switch sv := v.(type) {
 	case []int:
 		return sv
@@ -70,7 +101,7 @@ func ToIntSlice(v interface{}) []int {
 			if length > 0 {
 				result = make([]int, length)
 			}
-		}, func(v interface{}, i int) {
+		}, func(v any, i int) {
 			result[i] = ToInt(v)
 		})
 		return result
@@ -78,7 +109,9 @@ func ToIntSlice(v interface{}) []int {
 }
 
 // ToFloat64Slice converts any input slice into Float64 type slice
-func ToFloat64Slice(v interface{}) []float64 {
+//
+// Deprecated: Use Slice[float64](v) instead
+func ToFloat64Slice(v any) []float64 {
 	switch sv := v.(type) {
 	case []float64:
 		return sv
@@ -88,7 +121,7 @@ func ToFloat64Slice(v interface{}) []float64 {
 			if length > 0 {
 				result = make([]float64, length)
 			}
-		}, func(v interface{}, i int) {
+		}, func(v any, i int) {
 			result[i] = ToFloat64(v)
 		})
 		return result
@@ -96,7 +129,9 @@ func ToFloat64Slice(v interface{}) []float64 {
 }
 
 // ToSlice converts any input slice into destination type slice
-func ToSlice(dst, src interface{}, tags string) error {
+//
+// Deprecated: Use Slice[type](v) or TrySlice[type](v) instead
+func ToSlice(dst, src any, tags ...string) error {
 	if dst == nil || src == nil {
 		return errInvalidParams
 	}
@@ -122,7 +157,7 @@ func ToSlice(dst, src interface{}, tags string) error {
 
 	for i := 0; i < srcSlice.Len(); i++ {
 		it := srcSlice.Index(i)
-		if v, err := ToType(it, dstElemType, tags); err == nil {
+		if v, err := ReflectTryToType(it, dstElemType, true, tags...); err == nil {
 			val := reflect.ValueOf(v)
 			if dstElemType.Kind() != val.Kind() {
 				val = val.Elem()
@@ -140,9 +175,9 @@ func ToSlice(dst, src interface{}, tags string) error {
 /// Helpers
 ///////////////////////////////////////////////////////////////////////////////
 
-func eachSlice(v interface{}, fi func(length int), f func(v interface{}, i int)) bool {
+func eachSlice(v any, fi func(length int), f func(v any, i int)) bool {
 	switch sv := v.(type) {
-	case []interface{}:
+	case []any:
 		if fi != nil {
 			fi(len(sv))
 		}
@@ -155,7 +190,7 @@ func eachSlice(v interface{}, fi func(length int), f func(v interface{}, i int))
 			fi(len(sv))
 		}
 		for i, v := range sv {
-			f((interface{})(v), i)
+			f((any)(v), i)
 		}
 		// Numeric
 	case []int:
@@ -163,21 +198,35 @@ func eachSlice(v interface{}, fi func(length int), f func(v interface{}, i int))
 			fi(len(sv))
 		}
 		for i, v := range sv {
-			f((interface{})(v), i)
+			f((any)(v), i)
 		}
 	case []int64:
 		if fi != nil {
 			fi(len(sv))
 		}
 		for i, v := range sv {
-			f((interface{})(v), i)
+			f((any)(v), i)
 		}
 	case []int32:
 		if fi != nil {
 			fi(len(sv))
 		}
 		for i, v := range sv {
-			f((interface{})(v), i)
+			f((any)(v), i)
+		}
+	case []int16:
+		if fi != nil {
+			fi(len(sv))
+		}
+		for i, v := range sv {
+			f((any)(v), i)
+		}
+	case []int8:
+		if fi != nil {
+			fi(len(sv))
+		}
+		for i, v := range sv {
+			f((any)(v), i)
 		}
 		// Unsigned numeric
 	case []uint:
@@ -185,21 +234,35 @@ func eachSlice(v interface{}, fi func(length int), f func(v interface{}, i int))
 			fi(len(sv))
 		}
 		for i, v := range sv {
-			f((interface{})(v), i)
+			f((any)(v), i)
 		}
 	case []uint64:
 		if fi != nil {
 			fi(len(sv))
 		}
 		for i, v := range sv {
-			f((interface{})(v), i)
+			f((any)(v), i)
 		}
 	case []uint32:
 		if fi != nil {
 			fi(len(sv))
 		}
 		for i, v := range sv {
-			f((interface{})(v), i)
+			f((any)(v), i)
+		}
+	case []uint16:
+		if fi != nil {
+			fi(len(sv))
+		}
+		for i, v := range sv {
+			f((any)(v), i)
+		}
+	case []uint8:
+		if fi != nil {
+			fi(len(sv))
+		}
+		for i, v := range sv {
+			f((any)(v), i)
 		}
 		// Float numeric
 	case []float32:
@@ -207,21 +270,21 @@ func eachSlice(v interface{}, fi func(length int), f func(v interface{}, i int))
 			fi(len(sv))
 		}
 		for i, v := range sv {
-			f((interface{})(v), i)
+			f((any)(v), i)
 		}
 	case []float64:
 		if fi != nil {
 			fi(len(sv))
 		}
 		for i, v := range sv {
-			f((interface{})(v), i)
+			f((any)(v), i)
 		}
 	case []bool:
 		if fi != nil {
 			fi(len(sv))
 		}
 		for i, v := range sv {
-			f((interface{})(v), i)
+			f((any)(v), i)
 		}
 	default:
 		rVal := reflect.ValueOf(sv)

@@ -25,74 +25,114 @@ import (
 	"strconv"
 )
 
-// ToStringByReflect converts reflection value to string
-func ToStringByReflect(v reflect.Value) string {
+// TryReflectStr converts reflection value to string
+func TryReflectStr(v reflect.Value) (string, error) {
 	if !v.IsValid() {
-		return ``
+		return ``, nil
 	}
 	switch v.Kind() {
 	case reflect.String:
-		return v.String()
+		return v.String(), nil
 	case reflect.Slice:
 		if v.Type().Elem().Kind() == reflect.Uint8 {
-			return string(v.Bytes())
+			return string(v.Bytes()), nil
 		}
 	case reflect.Bool:
 		if v.Bool() {
-			return "true"
+			return "true", nil
 		}
-		return "false"
+		return "false", nil
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return strconv.FormatInt(v.Int(), 10)
+		return strconv.FormatInt(v.Int(), 10), nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return strconv.FormatUint(v.Uint(), 10)
+		return strconv.FormatUint(v.Uint(), 10), nil
 	case reflect.Float32, reflect.Float64:
-		return strconv.FormatFloat(v.Float(), 'G', -1, 64)
+		return strconv.FormatFloat(v.Float(), 'G', -1, 64), nil
 	}
-	return fmt.Sprintf("%v", v.Interface())
+	return fmt.Sprintf("%v", v.Interface()), nil
+}
+
+// ReflectStr converts reflection value to string
+func ReflectStr(v reflect.Value) string {
+	s, _ := TryReflectStr(v)
+	return s
+}
+
+// TryReflectToString converts reflection value to string
+//
+// Deprecated: Use TryReflectStr instead
+func TryReflectToString(v reflect.Value) (string, error) {
+	return TryReflectStr(v)
+}
+
+// ReflectToString converts reflection value to string
+//
+// Deprecated: Use TryReflectStr instead
+func ReflectToString(v reflect.Value) string {
+	return ReflectStr(v)
+}
+
+// TryStr from any type
+func TryStr(v any) (string, error) {
+	switch val := v.(type) {
+	case nil:
+		return ``, nil
+	case string:
+		return val, nil
+	case []byte:
+		return string(val), nil
+	case bool:
+		if val {
+			return "true", nil
+		}
+		return "false", nil
+	case int:
+		return strconv.FormatInt(int64(val), 10), nil
+	case int8:
+		return strconv.FormatInt(int64(val), 10), nil
+	case int16:
+		return strconv.FormatInt(int64(val), 10), nil
+	case int32:
+		return strconv.FormatInt(int64(val), 10), nil
+	case int64:
+		return strconv.FormatInt(val, 10), nil
+	case uint:
+		return strconv.FormatUint(uint64(val), 10), nil
+	case uint8:
+		return strconv.FormatUint(uint64(val), 10), nil
+	case uint16:
+		return strconv.FormatUint(uint64(val), 10), nil
+	case uint32:
+		return strconv.FormatUint(uint64(val), 10), nil
+	case uint64:
+		return strconv.FormatUint(val, 10), nil
+	case float32:
+		return strconv.FormatFloat(float64(val), 'G', -1, 64), nil
+	case float64:
+		return strconv.FormatFloat(val, 'G', -1, 64), nil
+	case reflect.Value:
+		return TryReflectToString(reflectTarget(val))
+	}
+	val := reflectTarget(reflect.ValueOf(v))
+	return fmt.Sprintf("%v", val.Interface()), nil
+}
+
+// Str returns string value from any type
+func Str(v any) string {
+	s, _ := TryStr(v)
+	return s
 }
 
 // ToString from any type
-func ToString(v interface{}) string {
-	switch val := v.(type) {
-	case nil:
-		return ``
-	case string:
-		return val
-	case []byte:
-		return string(val)
-	case bool:
-		if val {
-			return "true"
-		}
-		return "false"
-	case int:
-		return strconv.FormatInt(int64(val), 10)
-	case int8:
-		return strconv.FormatInt(int64(val), 10)
-	case int16:
-		return strconv.FormatInt(int64(val), 10)
-	case int32:
-		return strconv.FormatInt(int64(val), 10)
-	case int64:
-		return strconv.FormatInt(val, 10)
-	case uint:
-		return strconv.FormatUint(uint64(val), 10)
-	case uint8:
-		return strconv.FormatUint(uint64(val), 10)
-	case uint16:
-		return strconv.FormatUint(uint64(val), 10)
-	case uint32:
-		return strconv.FormatUint(uint64(val), 10)
-	case uint64:
-		return strconv.FormatUint(val, 10)
-	case float32:
-		return strconv.FormatFloat(float64(val), 'G', -1, 64)
-	case float64:
-		return strconv.FormatFloat(val, 'G', -1, 64)
-	case reflect.Value:
-		return ToStringByReflect(reflectTarget(val))
-	}
-	val := reflectTarget(reflect.ValueOf(v))
-	return fmt.Sprintf("%v", val.Interface())
+//
+// Deprecated: Use Str instead
+func ToString(v any) string {
+	return Str(v)
+}
+
+// TryToString returns string value from any type
+//
+// Deprecated: Use TryStr instead
+func TryToString(v any) (string, error) {
+	return TryStr(v)
 }

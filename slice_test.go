@@ -9,76 +9,84 @@ import (
 func TestToSlice(t *testing.T) {
 	type customVal string
 	tests := []struct {
-		src interface{}
-		trg interface{}
-		cfn func(v interface{}) interface{}
+		src any
+		trg any
+		cfn func(v any) any
 	}{
 		{
 			src: []int{1, 2, 3, 4},
 			trg: []string{"1", "2", "3", "4"},
-			cfn: func(v interface{}) interface{} { return ToStringSlice(v) },
+			cfn: func(v any) any { return ToStringSlice(v) },
 		},
 		{
 			src: []int32{1, 2, 3, 4},
 			trg: []string{"1", "2", "3", "4"},
-			cfn: func(v interface{}) interface{} { return ToStringSlice(v) },
+			cfn: func(v any) any { return ToStringSlice(v) },
 		},
 		{
 			src: []customVal{"1", "2", "3", "4"},
 			trg: []string{"1", "2", "3", "4"},
-			cfn: func(v interface{}) interface{} { return ToStringSlice(v) },
+			cfn: func(v any) any { return ToStringSlice(v) },
 		},
 		{
-			src: []interface{}{"1", "2.5", 6, 1.2},
+			src: []any{"1", "2.5", 6, 1.2},
 			trg: []int{1, 2, 6, 1},
-			cfn: func(v interface{}) interface{} { return ToIntSlice(v) },
+			cfn: func(v any) any { return ToIntSlice(v) },
 		},
 		{
 			src: []float64{1, 2.5, 6, 1.2},
 			trg: []int{1, 2, 6, 1},
-			cfn: func(v interface{}) interface{} { return ToIntSlice(v) },
+			cfn: func(v any) any { return ToIntSlice(v) },
 		},
 		{
 			src: []float32{1, 2.5, 6, 1.2},
 			trg: []int{1, 2, 6, 1},
-			cfn: func(v interface{}) interface{} { return ToIntSlice(v) },
+			cfn: func(v any) any { return ToIntSlice(v) },
 		},
 		{
 			src: []bool{true, false},
 			trg: []int{1, 0},
-			cfn: func(v interface{}) interface{} { return ToIntSlice(v) },
+			cfn: func(v any) any { return ToIntSlice(v) },
 		},
 		{
-			src: []interface{}{"1", "2.5", 6, 1.2},
-			trg: []interface{}{"1", "2.5", 6, 1.2},
-			cfn: func(v interface{}) interface{} { return ToInterfaceSlice(v) },
+			src: []any{"1", "2.5", 6, 1.2},
+			trg: []any{"1", "2.5", 6, 1.2},
+			cfn: func(v any) any { return ToInterfaceSlice(v) },
 		},
 		{
 			src: []int{1, 2, 3, 4},
-			trg: []interface{}{1, 2, 3, 4},
-			cfn: func(v interface{}) interface{} { return ToInterfaceSlice(v) },
+			trg: []any{1, 2, 3, 4},
+			cfn: func(v any) any { return ToInterfaceSlice(v) },
 		},
 		{
 			src: []int64{1, 2, 3, 4},
-			trg: []interface{}{int64(1), int64(2), int64(3), int64(4)},
-			cfn: func(v interface{}) interface{} { return ToInterfaceSlice(v) },
+			trg: []any{int64(1), int64(2), int64(3), int64(4)},
+			cfn: func(v any) any { return ToInterfaceSlice(v) },
 		},
 		{
-			src: []interface{}{"1", "2.5", 6, 1.2, "999.5"},
+			src: []any{"1", "2.5", 6, 1.2, "999.5"},
 			trg: []float64{1, 2.5, 6, 1.2, 999.5},
-			cfn: func(v interface{}) interface{} { return ToFloat64Slice(v) },
+			cfn: func(v any) any { return ToFloat64Slice(v) },
 		},
 		{
 			src: []string{"1", "2.5", "6", "1.2", "999.5"},
 			trg: []float64{1, 2.5, 6, 1.2, 999.5},
-			cfn: func(v interface{}) interface{} { return ToFloat64Slice(v) },
+			cfn: func(v any) any { return ToFloat64Slice(v) },
 		},
 		{
-			src: []interface{}{"1", "2.5", 6, 1.2, "999.5", true},
+			src: []any{"1", "2.5", 6, 1.2, "999.5", true},
 			trg: []int{1, 2, 6, 1, 999, 1},
-			cfn: func(v interface{}) interface{} {
+			cfn: func(v any) any {
 				arr := []int{}
 				_ = ToSlice(&arr, v, "")
+				return arr
+			},
+		},
+		{
+			src: []any{"1", "2.5", 6, 1.2, "999.5", true},
+			trg: []int{1, 2, 6, 1, 999, 1},
+			cfn: func(v any) any {
+				arr := Slice[int](v.([]any))
 				return arr
 			},
 		},

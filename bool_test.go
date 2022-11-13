@@ -7,7 +7,7 @@ import (
 
 func TestToBool(t *testing.T) {
 	var tests = []struct {
-		src    interface{}
+		src    any
 		target bool
 	}{
 		{src: 120, target: true},
@@ -39,22 +39,22 @@ func TestToBool(t *testing.T) {
 	}
 }
 
-func BenchmarkToBool(b *testing.B) {
-	values := []interface{}{120, uint64(122), "f", "true", "", []byte("t"), true, false, 0.}
+func BenchmarkBool(b *testing.B) {
+	values := []any{120, uint64(122), "f", "true", "", []byte("t"), true, false, 0.}
 	for n := 0; n < b.N; n++ {
-		_ = ToBool(values[n%len(values)])
+		_ = Bool(values[n%len(values)])
 	}
 }
 
 func BenchmarkToBoolByReflect(b *testing.B) {
 	var (
-		baseValues = []interface{}{120, uint64(122), "f", "true", "", []byte("t"), true, false, 0.}
+		baseValues = []any{120, uint64(122), "f", "true", "", []byte("t"), true, false, 0.}
 		values     = []reflect.Value{}
 	)
 	for _, v := range baseValues {
 		values = append(values, reflect.ValueOf(v))
 	}
 	for n := 0; n < b.N; n++ {
-		_ = ToBoolByReflect(values[n%len(values)])
+		_ = ReflectToBool(values[n%len(values)])
 	}
 }

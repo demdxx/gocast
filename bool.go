@@ -22,12 +22,13 @@ package gocast
 import (
 	"bytes"
 	"reflect"
+	"strings"
 )
 
 var bytesType = reflect.TypeOf([]byte(nil))
 
-// ToBoolByReflect returns boolean from reflection
-func ToBoolByReflect(v reflect.Value) bool {
+// ReflectToBool returns boolean from reflection
+func ReflectToBool(v reflect.Value) bool {
 	if !v.IsValid() {
 		return false
 	}
@@ -58,16 +59,19 @@ func ToBoolByReflect(v reflect.Value) bool {
 	return false
 }
 
-// ToBool from any other basic types
-func ToBool(v interface{}) bool {
+// Bool from any other basic types
+func Bool(v any) bool {
 	switch bv := v.(type) {
+	case nil:
+		return false
 	case string:
-		return bv == "1" || bv == "true" || bv == "t"
+		return bv == "1" || bv == "T" || bv == "t" || strings.EqualFold(bv, "true")
 	case []byte:
 		return len(bv) != 0 && (false ||
 			bytes.Equal(bv, []byte("1")) ||
-			bytes.Equal(bv, []byte("true")) ||
-			bytes.Equal(bv, []byte("t")))
+			bytes.Equal(bv, []byte("T")) ||
+			bytes.Equal(bv, []byte("t")) ||
+			bytes.EqualFold(bv, []byte("true")))
 	case bool:
 		return bv
 	case int:
@@ -98,8 +102,35 @@ func ToBool(v interface{}) bool {
 		return bv != 0
 	case []int:
 		return len(bv) != 0
-	case []interface{}:
+	case []int8:
+		return len(bv) != 0
+	case []int16:
+		return len(bv) != 0
+	case []int32:
+		return len(bv) != 0
+	case []uint64:
+		return len(bv) != 0
+	case []uint:
+		return len(bv) != 0
+	case []uint16:
+		return len(bv) != 0
+	case []uint32:
+		return len(bv) != 0
+	case []int64:
+		return len(bv) != 0
+	case []float32:
+		return len(bv) != 0
+	case []float64:
+		return len(bv) != 0
+	case []bool:
+		return len(bv) != 0
+	case []any:
 		return len(bv) != 0
 	}
-	return ToBoolByReflect(reflect.ValueOf(v))
+	return ReflectToBool(reflect.ValueOf(v))
+}
+
+// ToBool from any other basic types
+func ToBool(v any) bool {
+	return Bool(v)
 }

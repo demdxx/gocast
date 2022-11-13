@@ -9,7 +9,7 @@ import (
 )
 
 var stringTypecastTests = []struct {
-	value  interface{}
+	value  any
 	target string
 }{
 	{value: 1, target: "1"},
@@ -31,7 +31,7 @@ var stringTypecastTests = []struct {
 
 func TestToStringByReflect(t *testing.T) {
 	for _, test := range stringTypecastTests {
-		assert.Equal(t, ToStringByReflect(reflect.ValueOf(test.value)), test.target)
+		assert.Equal(t, ReflectToString(reflect.ValueOf(test.value)), test.target)
 	}
 }
 
@@ -47,7 +47,7 @@ func BenchmarkToStringByReflect(b *testing.B) {
 		for pb.Next() {
 			i := rand.Intn(len(stringTypecastTests))
 			v := reflect.ValueOf(stringTypecastTests[i].value)
-			_ = ToStringByReflect(v)
+			_ = ReflectToString(v)
 		}
 	})
 }

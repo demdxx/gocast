@@ -25,8 +25,8 @@ import (
 	"strings"
 )
 
-// ToInt64ByReflect returns int64 from reflection
-func ToInt64ByReflect(v reflect.Value) int64 {
+// ReflectToInt64 returns int64 from reflection
+func ReflectToInt64(v reflect.Value) int64 {
 	switch v.Kind() {
 	case reflect.String:
 		var val int64
@@ -67,74 +67,30 @@ func ToInt64ByReflect(v reflect.Value) int64 {
 }
 
 // ToInt64 from any other basic types
-func ToInt64(v interface{}) int64 {
-	switch iv := v.(type) {
-	case int:
-		return int64(iv)
-	case int8:
-		return int64(iv)
-	case int16:
-		return int64(iv)
-	case int32:
-		return int64(iv)
-	case int64:
-		return iv
-	case uint:
-		return int64(iv)
-	case uint8:
-		return int64(iv)
-	case uint16:
-		return int64(iv)
-	case uint32:
-		return int64(iv)
-	case uint64:
-		return int64(iv)
-	case uintptr:
-		return int64(iv)
-	case float32:
-		return int64(iv)
-	case float64:
-		return int64(iv)
-	case bool:
-		if iv {
-			return 1
-		}
-		return 0
-	case string:
-		var val int64
-		if strings.Contains(iv, ".") {
-			fval, _ := strconv.ParseFloat(iv, 64)
-			val = int64(fval)
-		} else {
-			val, _ = strconv.ParseInt(iv, 10, 64)
-		}
-		return val
-	case []byte:
-		var val int64
-		str := string(iv)
-		if strings.Contains(str, ".") {
-			fval, _ := strconv.ParseFloat(str, 64)
-			val = int64(fval)
-		} else {
-			val, _ = strconv.ParseInt(str, 10, 64)
-		}
-		return val
-	}
-	return 0
+//
+// Deprecated: Use Number[int64](v) instead
+func ToInt64(v any) int64 {
+	return Number[int64](v)
 }
 
 // ToInt32 from any other basic types
-func ToInt32(v interface{}) int32 {
+//
+// Deprecated: Use Number[int32](v) instead
+func ToInt32(v any) int32 {
 	return int32(ToInt64(v))
 }
 
 // ToInt16 from any other basic types
-func ToInt16(v interface{}) int16 {
+//
+// Deprecated: Use Number[int16](v) instead
+func ToInt16(v any) int16 {
 	return int16(ToInt64(v))
 }
 
 // ToInt from any other basic types
-func ToInt(v interface{}) int {
+//
+// Deprecated: Use Number[int](v) instead
+func ToInt(v any) int {
 	return int(ToInt64(v))
 }
 
@@ -180,73 +136,29 @@ func ToUint64ByReflect(v reflect.Value) uint64 {
 }
 
 // ToUint64 from any other basic types
-func ToUint64(v interface{}) uint64 {
-	switch iv := v.(type) {
-	case int:
-		return uint64(iv)
-	case int8:
-		return uint64(iv)
-	case int16:
-		return uint64(iv)
-	case int32:
-		return uint64(iv)
-	case int64:
-		return uint64(iv)
-	case uint:
-		return uint64(iv)
-	case uint8:
-		return uint64(iv)
-	case uint16:
-		return uint64(iv)
-	case uint32:
-		return uint64(iv)
-	case uint64:
-		return iv
-	case uintptr:
-		return uint64(iv)
-	case float32:
-		return uint64(iv)
-	case float64:
-		return uint64(iv)
-	case bool:
-		if iv {
-			return 1
-		}
-		return 0
-	case string:
-		var val uint64
-		if strings.Contains(iv, ".") {
-			fval, _ := strconv.ParseFloat(iv, 64)
-			val = uint64(fval)
-		} else {
-			val, _ = strconv.ParseUint(iv, 10, 64)
-		}
-		return val
-	case []byte:
-		var val uint64
-		str := string(iv)
-		if strings.Contains(str, ".") {
-			fval, _ := strconv.ParseFloat(str, 64)
-			val = uint64(fval)
-		} else {
-			val, _ = strconv.ParseUint(str, 10, 64)
-		}
-		return val
-	}
-	return 0
+//
+// Deprecated: Use Number[uint64](v) instead
+func ToUint64(v any) uint64 {
+	return Number[uint64](v)
 }
 
 // ToUint32 from any other basic types
-func ToUint32(v interface{}) uint32 {
+//
+// Deprecated: Use Number[uint32](v) instead
+func ToUint32(v any) uint32 {
 	return uint32(ToUint64(v))
 }
 
 // ToUint32 from any other basic types
-func ToUint16(v interface{}) uint32 {
-	return uint32(ToUint64(v))
+//
+// Deprecated: Use Number[uint16](v) instead
+func ToUint16(v any) uint16 {
+	return uint16(ToUint64(v))
 }
 
 // ToUint from any other basic types
-func ToUint(v interface{}) uint {
+//
+// Deprecated: Use Number[uint](v) instead
+func ToUint(v any) uint {
 	return uint(ToUint64(v))
 }

@@ -7,7 +7,7 @@ import (
 
 func TestToFloat(t *testing.T) {
 	var tests = []struct {
-		src    interface{}
+		src    any
 		target float64
 	}{
 		{src: 120, target: 120},
@@ -40,7 +40,7 @@ func TestToFloat(t *testing.T) {
 
 func TestToFloat64ByReflect(t *testing.T) {
 	var tests = []struct {
-		src    interface{}
+		src    any
 		target float64
 	}{
 		{src: 120, target: 120},
@@ -65,14 +65,14 @@ func TestToFloat64ByReflect(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if v := ToFloat64ByReflect(reflect.ValueOf(test.src)); v != test.target {
+		if v := ReflectToFloat64(reflect.ValueOf(test.src)); v != test.target {
 			t.Errorf("target must be equal %v != %f", test.src, test.target)
 		}
 	}
 }
 
 func BenchmarkToFloat(b *testing.B) {
-	values := []interface{}{120, int64(122), "123", "120.0", "120.", []byte("125."), true, false}
+	values := []any{120, int64(122), "123", "120.0", "120.", []byte("125."), true, false}
 	for n := 0; n < b.N; n++ {
 		_ = ToFloat(values[n%len(values)])
 	}

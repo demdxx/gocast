@@ -23,72 +23,81 @@ import (
 	"reflect"
 )
 
-// To cast any input type into the target
-func To(v, to interface{}, tags string) (interface{}, error) {
+// TryTo cast any input type into the target
+func TryTo(v, to any, tags ...string) (any, error) {
 	if v == nil || to == nil {
 		return nil, errInvalidParams
 	}
-	return ToT(v, reflect.ValueOf(to).Type(), tags)
+	return TryToType(v, reflect.ValueOf(to).Type(), tags...)
 }
 
-// ToT cast any input type into the target reflection
-func ToT(v interface{}, t reflect.Type, tags string) (interface{}, error) {
+// TryTo cast any input type into the target
+func To(v, to any, tags ...string) any {
+	val, _ := TryTo(v, to, tags...)
+	return val
+}
+
+// TryToType cast any input type into the target reflection
+func TryToType(v any, t reflect.Type, tags ...string) (any, error) {
 	if v == nil || t == nil {
 		return nil, errInvalidParams
 	}
-	vl, err := ToType(reflect.ValueOf(v), t, tags)
+	vl, err := ReflectTryToType(reflect.ValueOf(v), t, true, tags...)
 	return vl, err
 }
 
-// ToType from reflection value to reflection type
-func ToType(v reflect.Value, t reflect.Type, tags string) (interface{}, error) {
-	if reflect.Ptr == v.Kind() {
-		v = reflectTarget(v)
-	}
+// ToType cast any input type into the target reflection
+func ToType(v any, t reflect.Type, tags ...string) any {
+	val, _ := TryToType(v, t, tags...)
+	return val
+}
 
+// ReflectTryToType converts reflection value to reflection type or returns error
+func ReflectTryToType(v reflect.Value, t reflect.Type, recursive bool, tags ...string) (any, error) {
+	v = reflectTarget(v)
 	var err error
 	switch t.Kind() {
 	case reflect.String:
-		return ToString(v.Interface()), nil
+		return Str(v.Interface()), nil
 	case reflect.Bool:
-		return ToBool(v.Interface()), nil
+		return Bool(v.Interface()), nil
 	case reflect.Int:
-		return ToInt(v.Interface()), nil
+		return Number[int](v.Interface()), nil
 	case reflect.Int8:
-		return (int8)(ToInt(v.Interface())), nil
+		return Number[int8](v.Interface()), nil
 	case reflect.Int16:
-		return (int16)(ToInt(v.Interface())), nil
+		return Number[int16](v.Interface()), nil
 	case reflect.Int32:
-		return ToInt32(v.Interface()), nil
+		return Number[int32](v.Interface()), nil
 	case reflect.Int64:
-		return ToInt64(v.Interface()), nil
+		return Number[int64](v.Interface()), nil
 	case reflect.Uint:
-		return ToUint(v.Interface()), nil
+		return Number[uint](v.Interface()), nil
 	case reflect.Uint8:
-		return (uint8)(ToUint(v.Interface())), nil
+		return Number[uint8](v.Interface()), nil
 	case reflect.Uint16:
-		return (uint16)(ToUint(v.Interface())), nil
+		return Number[uint16](v.Interface()), nil
 	case reflect.Uint32:
-		return ToUint32(v.Interface()), nil
+		return Number[uint32](v.Interface()), nil
 	case reflect.Uint64:
-		return ToUint64(v.Interface()), nil
+		return Number[uint64](v.Interface()), nil
 	case reflect.Float32:
-		return ToFloat32(v.Interface()), nil
+		return Number[float32](v.Interface()), nil
 	case reflect.Float64:
-		return ToFloat64(v.Interface()), nil
+		return Number[float64](v.Interface()), nil
 	case reflect.Slice:
 		slice := reflect.New(t)
-		if err = ToSlice(slice.Interface(), v.Interface(), tags); nil == err {
+		if err = ToSlice(slice.Interface(), v.Interface(), tags...); err == nil {
 			return slice.Elem().Interface(), nil
 		}
 	case reflect.Map:
-		mp := reflect.MakeMap(t)
-		if err = ToMap(mp.Interface(), v.Interface(), tags, true); nil == err {
-			return mp.Interface(), nil
+		mp := reflect.MakeMap(t).Interface()
+		if err = ToMap(mp, v.Interface(), recursive, tags...); err == nil {
+			return mp, nil
 		}
 	case reflect.Ptr:
-		var vl interface{}
-		if vl, err = ToType(v, t.Elem(), tags); nil == err {
+		var vl any
+		if vl, err = ReflectTryToType(v, t.Elem(), true, tags...); err == nil {
 			if reflect.Ptr != t.Elem().Kind() {
 				return vl, nil
 			}
@@ -99,9 +108,49 @@ func ToType(v reflect.Value, t reflect.Type, tags string) (interface{}, error) {
 		}
 	case reflect.Struct:
 		st := reflect.New(t).Interface()
-		if err = ToStruct(st, v.Interface(), tags); nil == err {
+		if err = TryCopyStruct(st, v.Interface(), tags...); err == nil {
 			return st, nil
 		}
 	}
 	return nil, err
+}
+
+// ReflectToType converts reflection valut to reflection type or returns nil
+func ReflectToType(v reflect.Value, t reflect.Type, tags ...string) any {
+	val, _ := ReflectTryToType(v, t, true, tags...)
+	return val
+}
+
+// TryCastValue source type into the target type
+func TryCastValue[R any, T any](v T, recursive bool, tags ...string) (R, error) {
+	var (
+		rVal     R
+		val, err = TryTo(v, rVal, tags...)
+	)
+	if err != nil {
+		return rVal, err
+	}
+	return val.(R), nil
+}
+
+// TryCastRecursive source type into the target type with recursive data converting
+func TryCastRecursive[R any, T any](v T, tags ...string) (R, error) {
+	return TryCastValue[R](v, true, tags...)
+}
+
+// TryCast source type into the target type
+func TryCast[R any, T any](v T, tags ...string) (R, error) {
+	return TryCastValue[R](v, false, tags...)
+}
+
+// Cast source type into the target type
+func Cast[R any, T any](v T, tags ...string) R {
+	val, _ := TryCast[R](v, tags...)
+	return val
+}
+
+// CastRecursive source type into the target type
+func CastRecursive[R any, T any](v T, tags ...string) R {
+	val, _ := TryCastRecursive[R](v, tags...)
+	return val
 }

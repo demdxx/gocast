@@ -28,14 +28,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Structure method errors
-var (
-	ErrStructFieldNameUndefined      = errors.New("struct field name undefined")
-	ErrStructFieldValueCantBeChanged = errors.New("struct field value cant be changed")
-)
-
-// ToStruct convert any input type into the target structure
-func ToStruct(dst, src interface{}, tag string) (err error) {
+// TryCopyStruct convert any input type into the target structure
+func TryCopyStruct(dst, src any, tags ...string) (err error) {
 	if dst == nil || src == nil {
 		return errInvalidParams
 	}
@@ -73,12 +67,12 @@ func ToStruct(dst, src interface{}, tag string) (err error) {
 		t := s.Type()
 
 		switch src.(type) {
-		case map[interface{}]interface{}, map[string]interface{}, map[string]string:
+		case map[any]any, map[string]any, map[string]string:
 			for i := 0; i < s.NumField(); i++ {
 				f := s.Field(i)
 				if f.CanSet() {
 					// Get passable field names
-					names := fieldNames(t.Field(i), tag)
+					names := fieldNames(t.Field(i), tags...)
 					if len(names) < 1 {
 						continue
 					}
@@ -92,12 +86,12 @@ func ToStruct(dst, src interface{}, tag string) (err error) {
 					} else {
 						switch f.Kind() {
 						case reflect.Struct:
-							if err = ToStruct(f.Addr().Interface(), v, tag); err != nil {
+							if err = TryCopyStruct(f.Addr().Interface(), v, tags...); err != nil {
 								return err
 							}
 						default:
-							var vl interface{}
-							if vl, err = ToType(reflect.ValueOf(v), f.Type(), tag); err == nil {
+							var vl any
+							if vl, err = TryToType(reflect.ValueOf(v), f.Type(), tags...); err == nil {
 								val := reflect.ValueOf(vl)
 								if val.Kind() == reflect.Ptr && val.Kind() != f.Kind() {
 									val = val.Elem()
@@ -122,16 +116,29 @@ func ToStruct(dst, src interface{}, tag string) (err error) {
 	return err
 }
 
-// StructFields returns the field names from the structure
-func StructFields(st interface{}, tag string) []string {
-	fields := []string{}
+// Struct convert any input type into the target structure
+func Struct[R any](src any, tags ...string) (R, error) {
+	var res R
+	err := TryCopyStruct(&res, src, tags...)
+	return res, err
+}
 
+// ToStruct convert any input type into the target structure
+//
+// Deprecated: Use TryCopyStruct instead
+func ToStruct(dst, src any, tags ...string) error {
+	return TryCopyStruct(dst, src, tags...)
+}
+
+// StructFields returns the field names from the structure
+func StructFields(st any, tag string) []string {
 	s := reflectTarget(reflect.ValueOf(st))
 	t := s.Type()
 
+	fields := make([]string, 0, s.NumField())
 	for i := 0; i < s.NumField(); i++ {
 		fname, _ := fieldName(t.Field(i), tag)
-		if len(fname) > 0 && fname != "-" {
+		if fname != "" && fname != "-" {
 			fields = append(fields, fname)
 		}
 	}
@@ -139,7 +146,7 @@ func StructFields(st interface{}, tag string) []string {
 }
 
 // StructFieldTags returns Map with key->tag matching
-func StructFieldTags(st interface{}, tag string) map[string]string {
+func StructFieldTags(st any, tag string) map[string]string {
 	fields := map[string]string{}
 	keys, values := StructFieldTagsUnsorted(st, tag)
 
@@ -150,7 +157,7 @@ func StructFieldTags(st interface{}, tag string) map[string]string {
 }
 
 // StructFieldTagsUnsorted returns field names and tag targets separately
-func StructFieldTagsUnsorted(st interface{}, tag string) ([]string, []string) {
+func StructFieldTagsUnsorted(st any, tag string) ([]string, []string) {
 	keys := []string{}
 	values := []string{}
 
@@ -169,7 +176,7 @@ func StructFieldTagsUnsorted(st interface{}, tag string) ([]string, []string) {
 }
 
 // StructFieldValue returns the value of the struct field
-func StructFieldValue(st interface{}, name string) (interface{}, error) {
+func StructFieldValue(st any, name string) (any, error) {
 	s := reflectTarget(reflect.ValueOf(st))
 	t := s.Type()
 	if _, ok := t.FieldByName(name); ok {
@@ -179,7 +186,7 @@ func StructFieldValue(st interface{}, name string) (interface{}, error) {
 }
 
 // SetStructFieldValue puts value into the struct field
-func SetStructFieldValue(st interface{}, name string, value interface{}) error {
+func SetStructFieldValue(st any, name string, value any) error {
 	s := reflectTarget(reflect.ValueOf(st))
 	t := s.Type()
 	if _, ok := t.FieldByName(name); ok {
@@ -199,14 +206,24 @@ func SetStructFieldValue(st interface{}, name string, value interface{}) error {
 
 var fieldNameArr = []string{"field", "schema", "sql", "json", "xml", "yaml"}
 
-func fieldNames(f reflect.StructField, tag string) []string {
-	names := fieldTagArr(f, tag)
-	switch names[0] {
-	case "", "-":
-		return []string{f.Name}
-	default:
+func fieldNames(f reflect.StructField, tags ...string) []string {
+	if len(tags) > 0 {
+		names := fieldTagArr(f, tags[0])
+		switch names[0] {
+		case "", "-":
+			return []string{f.Name}
+		default:
+		}
+		return []string{names[0], f.Name}
 	}
-	return []string{names[0], f.Name}
+	return []string{f.Name, f.Name}
+}
+
+func fieldNameFromTags(f reflect.StructField, tags ...string) (name string, omitempty bool) {
+	if len(tags) == 0 {
+		return f.Name, false
+	}
+	return fieldName(f, tags[0])
 }
 
 func fieldName(f reflect.StructField, tag string) (name string, omitempty bool) {
@@ -218,7 +235,7 @@ func fieldName(f reflect.StructField, tag string) (name string, omitempty bool) 
 	if name == "" {
 		name = f.Name
 	}
-	return
+	return name, omitempty
 }
 
 func fieldTagArr(f reflect.StructField, tag string) []string {

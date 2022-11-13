@@ -7,7 +7,7 @@ import (
 
 func TestToInt(t *testing.T) {
 	var tests = []struct {
-		src    interface{}
+		src    any
 		target int
 	}{
 		{src: 120, target: 120},
@@ -20,6 +20,7 @@ func TestToInt(t *testing.T) {
 		{src: uint16(121), target: 121},
 		{src: uint32(121), target: 121},
 		{src: uint64(121), target: 121},
+		{src: uintptr(121), target: 121},
 		{src: float64(122.), target: 122},
 		{src: float32(122.), target: 122},
 		{src: "123", target: 123},
@@ -40,7 +41,7 @@ func TestToInt(t *testing.T) {
 
 func TestToInt64ByReflect(t *testing.T) {
 	var tests = []struct {
-		src    interface{}
+		src    any
 		target int
 	}{
 		{src: 120, target: 120},
@@ -53,6 +54,7 @@ func TestToInt64ByReflect(t *testing.T) {
 		{src: uint16(121), target: 121},
 		{src: uint32(121), target: 121},
 		{src: uint64(121), target: 121},
+		{src: uintptr(121), target: 121},
 		{src: float64(122.), target: 122},
 		{src: float32(122.), target: 122},
 		{src: "123", target: 123},
@@ -65,14 +67,14 @@ func TestToInt64ByReflect(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if int(ToInt64ByReflect(reflect.ValueOf(test.src))) != test.target {
+		if int(ReflectToInt64(reflect.ValueOf(test.src))) != test.target {
 			t.Errorf("target must be equal %v != %d", test.target, test.target)
 		}
 	}
 }
 
 func BenchmarkToInt(b *testing.B) {
-	values := []interface{}{120, uint64(122), "123", "120.0", "-120.", []byte("125."), true, false}
+	values := []any{120, uint64(122), "123", "120.0", "-120.", []byte("125."), true, false}
 	for n := 0; n < b.N; n++ {
 		_ = ToInt(values[n%len(values)])
 	}
@@ -80,7 +82,7 @@ func BenchmarkToInt(b *testing.B) {
 
 func TestToUInt(t *testing.T) {
 	var tests = []struct {
-		src    interface{}
+		src    any
 		target uint
 	}{
 		{src: 120, target: 120},
@@ -93,6 +95,7 @@ func TestToUInt(t *testing.T) {
 		{src: uint16(121), target: 121},
 		{src: uint32(121), target: 121},
 		{src: uint64(121), target: 121},
+		{src: uintptr(121), target: 121},
 		{src: float64(122.), target: 122},
 		{src: float32(122.), target: 122},
 		{src: "123", target: 123},
@@ -113,7 +116,7 @@ func TestToUInt(t *testing.T) {
 
 func TestToUint64ByReflect(t *testing.T) {
 	var tests = []struct {
-		src    interface{}
+		src    any
 		target uint
 	}{
 		{src: 120, target: 120},
@@ -126,6 +129,7 @@ func TestToUint64ByReflect(t *testing.T) {
 		{src: uint16(121), target: 121},
 		{src: uint32(121), target: 121},
 		{src: uint64(121), target: 121},
+		{src: uintptr(121), target: 121},
 		{src: float64(122.), target: 122},
 		{src: float32(122.), target: 122},
 		{src: "123", target: 123},
@@ -145,7 +149,7 @@ func TestToUint64ByReflect(t *testing.T) {
 }
 
 func BenchmarkToUint(b *testing.B) {
-	values := []interface{}{120, int64(122), "123", "120.0", "120.", []byte("125."), true, false}
+	values := []any{120, int64(122), "123", "120.0", "120.", []byte("125."), true, false}
 	for n := 0; n < b.N; n++ {
 		_ = ToUint(values[n%len(values)])
 	}
