@@ -47,25 +47,33 @@ func TryCopyStructContext(ctx context.Context, dst, src any, tags ...string) (er
 	case time.Time, *time.Time:
 		err = setFieldTimeValue(reflect.ValueOf(dst), src)
 	default:
-		s := reflectTarget(reflect.ValueOf(dst))
-		t := s.Type()
+		destVal := reflectTarget(reflect.ValueOf(dst))
+		destType := destVal.Type()
 
-		switch src.(type) {
-		case map[any]any, map[string]any, map[string]string:
-			for i := 0; i < s.NumField(); i++ {
-				f := s.Field(i)
+		srcVal := reflectTarget(reflect.ValueOf(src))
+
+		switch srcVal.Kind() {
+		case reflect.Map, reflect.Struct:
+			for i := 0; i < destVal.NumField(); i++ {
+				f := destVal.Field(i)
 				if !f.CanSet() {
 					continue
 				}
 
 				// Get passable field names
-				names := fieldNames(t.Field(i), tags...)
+				names := fieldNames(destType.Field(i), tags...)
 				if len(names) < 1 {
 					continue
 				}
 
 				// Get value from map
-				v := mapValueByStringKeys(src, names)
+				var v any
+
+				if srcVal.Kind() == reflect.Map {
+					v = reflectMapValueByStringKeys(srcVal, names)
+				} else {
+					v, _ = ReflectStructFieldValue(srcVal, names...)
+				}
 
 				// Set field value
 				if v == nil {
@@ -73,7 +81,7 @@ func TryCopyStructContext(ctx context.Context, dst, src any, tags ...string) (er
 				} else {
 					switch f.Kind() {
 					case reflect.Struct:
-						if err = TryCopyStruct(f.Addr().Interface(), v, tags...); err != nil {
+						if err = TryCopyStructContext(ctx, f.Addr().Interface(), v, tags...); err != nil {
 							return err
 						}
 					default:
@@ -83,11 +91,7 @@ func TryCopyStructContext(ctx context.Context, dst, src any, tags ...string) (er
 							if val.Kind() == reflect.Ptr && val.Kind() != f.Kind() {
 								val = val.Elem()
 							}
-							if val.Kind() == f.Kind() || f.Kind() == reflect.Interface {
-								err = setFieldValueReflect(ctx, f, val)
-							} else {
-								err = wrapError(ErrUnsupportedType, names[0])
-							}
+							err = setFieldValueReflect(ctx, f, val)
 						} else if setter, _ := f.Interface().(CastSetter); setter != nil {
 							err = setter.CastSet(ctx, v)
 						} else if f.CanAddr() {
@@ -102,7 +106,7 @@ func TryCopyStructContext(ctx context.Context, dst, src any, tags ...string) (er
 				}
 			}
 		default:
-			err = wrapError(ErrUnsupportedType, t.Name())
+			err = wrapError(ErrUnsupportedType, destType.Name())
 		}
 	}
 	return err
@@ -173,13 +177,21 @@ func StructFieldTagsUnsorted(st any, tag string) ([]string, []string) {
 }
 
 // StructFieldValue returns the value of the struct field
-func StructFieldValue(st any, name string) (any, error) {
-	s := reflectTarget(reflect.ValueOf(st))
-	t := s.Type()
-	if _, ok := t.FieldByName(name); ok {
-		return s.FieldByName(name).Interface(), nil
+func StructFieldValue(st any, names ...string) (any, error) {
+	structVal := reflectTarget(reflect.ValueOf(st))
+	return ReflectStructFieldValue(structVal, names...)
+}
+
+// ReflectStructFieldValue returns the value of the struct field
+func ReflectStructFieldValue(st reflect.Value, names ...string) (any, error) {
+	structVal := reflectTarget(st)
+	structType := structVal.Type()
+	for _, name := range names {
+		if _, ok := structType.FieldByName(name); ok {
+			return structVal.FieldByName(name).Interface(), nil
+		}
 	}
-	return nil, wrapError(ErrStructFieldNameUndefined, name)
+	return nil, wrapError(ErrStructFieldNameUndefined, strings.Join(names, ", "))
 }
 
 // SetStructFieldValue puts value into the struct field

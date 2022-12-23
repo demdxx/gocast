@@ -28,7 +28,7 @@ func TryTo(v, to any, tags ...string) (any, error) {
 	if v == nil || to == nil {
 		return nil, ErrInvalidParams
 	}
-	return TryToType(v, reflect.ValueOf(to).Type(), tags...)
+	return TryToType(v, reflect.TypeOf(to), tags...)
 }
 
 // TryTo cast any input type into the target
@@ -55,6 +55,9 @@ func ToType(v any, t reflect.Type, tags ...string) any {
 // ReflectTryToType converts reflection value to reflection type or returns error
 func ReflectTryToType(v reflect.Value, t reflect.Type, recursive bool, tags ...string) (any, error) {
 	v = reflectTarget(v)
+	if v.Type() == t && !v.CanAddr() {
+		return v.Interface(), nil
+	}
 	var err error
 	switch t.Kind() {
 	case reflect.String:
@@ -112,6 +115,12 @@ func ReflectTryToType(v reflect.Value, t reflect.Type, recursive bool, tags ...s
 		st := reflect.New(t).Interface()
 		if err = TryCopyStruct(st, v.Interface(), tags...); err == nil {
 			return st, nil
+		}
+	default:
+		if v.Type() == t {
+			newVal := reflect.New(t)
+			reflect.Copy(newVal.Addr(), v.Addr())
+			return newVal.Interface(), nil
 		}
 	}
 	return nil, err

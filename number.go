@@ -15,6 +15,14 @@ type Numeric interface {
 // TryNumber converts from types which could be numbers
 func TryNumber[R Numeric](v any) (R, error) {
 	switch v := v.(type) {
+	case nil:
+		return R(0), nil
+	case R:
+		return v, nil
+	case *R:
+		return *v, nil
+	}
+	switch v := v.(type) {
 	case string:
 		if strings.Contains(v, ".") {
 			rval, err := strconv.ParseFloat(v, 64)
@@ -61,8 +69,6 @@ func TryNumber[R Numeric](v any) (R, error) {
 		return R(v), nil
 	case float64:
 		return R(v), nil
-	case nil:
-		return R(0), nil
 	}
 	return R(0), ErrUnsupportedNumericType
 }

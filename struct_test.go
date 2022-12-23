@@ -11,7 +11,12 @@ import (
 type customInt int
 
 func (c *customInt) CastSet(ctx context.Context, v any) error {
-	*c = customInt(Int(v))
+	switch val := v.(type) {
+	case customInt:
+		*c = val
+	default:
+		*c = customInt(Number[int](v))
+	}
 	return nil
 }
 
@@ -25,6 +30,29 @@ type testStruct struct {
 	CreatedAt   time.Time `field:"created_at"`
 	UpdatedAt   time.Time `field:"updated_at"`
 	PublishedAt time.Time `field:"published_at"`
+}
+
+var testStructPreparedValue = map[string]any{
+	"Name":        "test",
+	"Value":       "1900",
+	"Count":       112.2,
+	"CreatedAt":   "2020/10/10",
+	"UpdatedAt":   time.Now().Unix(),
+	"PublishedAt": time.Now(),
+	"AnyTarget":   "hi",
+	"NilVal":      nil,
+}
+
+func testPreparedStruct(t *testing.T, it *testStruct) {
+	assert.Equal(t, "test", it.Name)
+	assert.Equal(t, int64(1900), it.Value)
+	assert.Equal(t, customInt(112), it.Count)
+	assert.Equal(t, 2020, it.CreatedAt.Year())
+	assert.Equal(t, time.Now().Year(), it.UpdatedAt.Year())
+	assert.Equal(t, time.Now().Year(), it.PublishedAt.Year())
+	assert.Equal(t, "hi", it.AnyTarget)
+	assert.Equal(t, false, it.ignore)
+	assert.Nil(t, it.NilVal)
 }
 
 func TestStructGetSetFieldValue(t *testing.T) {
@@ -73,26 +101,48 @@ func TestStructGetSetFieldValue(t *testing.T) {
 }
 
 func TestStructCast(t *testing.T) {
-	res, err := Struct[testStruct](map[string]any{
-		"Name":        "test",
-		"Value":       "1900",
-		"Count":       112.2,
-		"CreatedAt":   "2020/10/10",
-		"UpdatedAt":   time.Now().Unix(),
-		"PublishedAt": time.Now(),
-		"AnyTarget":   "hi",
-		"NilVal":      nil,
+	res, err := Struct[testStruct](testStructPreparedValue)
+	assert.NoError(t, err)
+	testPreparedStruct(t, &res)
+}
+
+func TestStructCastNested(t *testing.T) {
+	testStructPrepared, err := Struct[testStruct](testStructPreparedValue)
+	assert.NoError(t, err)
+	testPreparedStruct(t, &testStructPrepared)
+
+	type testStruct2 struct {
+		Sub      testStruct
+		SubMap   map[string]*testStruct
+		SubSlice []*testStruct
+	}
+	res, err := Struct[testStruct2](map[string]any{
+		"Sub": testStructPreparedValue,
+		"SubMap": map[string]any{
+			"a": testStructPreparedValue,
+			"b": testStructPreparedValue,
+			"c": &testStructPrepared,
+		},
+		"SubSlice": []any{
+			testStructPreparedValue,
+			testStructPreparedValue,
+			&testStructPrepared,
+		},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, "test", res.Name)
-	assert.Equal(t, int64(1900), res.Value)
-	assert.Equal(t, customInt(112), res.Count)
-	assert.Equal(t, 2020, res.CreatedAt.Year())
-	assert.Equal(t, time.Now().Year(), res.UpdatedAt.Year())
-	assert.Equal(t, time.Now().Year(), res.PublishedAt.Year())
-	assert.Equal(t, "hi", res.AnyTarget)
-	assert.Equal(t, false, res.ignore)
-	assert.Nil(t, res.NilVal)
+	testPreparedStruct(t, &res.Sub)
+	assert.Equal(t, 3, len(res.SubMap))
+	for k, val := range res.SubMap {
+		t.Run("SubMap["+k+"]", func(t *testing.T) {
+			testPreparedStruct(t, val)
+		})
+	}
+	assert.Equal(t, 3, len(res.SubSlice))
+	for i, val := range res.SubSlice {
+		t.Run("SubSlice["+Str(i)+"]", func(t *testing.T) {
+			testPreparedStruct(t, val)
+		})
+	}
 }
 
 func TestStructFields(t *testing.T) {

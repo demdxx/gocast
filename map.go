@@ -29,13 +29,13 @@ func TryMapCopy[K comparable, V any](dst map[K]V, src any, recursive bool, tags 
 		return ErrInvalidParams
 	}
 	var (
-		s = reflectTarget(reflect.ValueOf(src))
-		t = s.Type()
+		srcVal  = reflectTarget(reflect.ValueOf(src))
+		srcType = srcVal.Type()
 	)
-	switch {
-	case reflect.Map == t.Kind():
-		for _, k := range s.MapKeys() {
-			field := s.MapIndex(k)
+	switch srcType.Kind() {
+	case reflect.Map:
+		for _, k := range srcVal.MapKeys() {
+			field := srcVal.MapIndex(k)
 			key, err := TryCast[K](k.Interface())
 			if err == nil {
 				if recursive {
@@ -48,15 +48,15 @@ func TryMapCopy[K comparable, V any](dst map[K]V, src any, recursive bool, tags 
 				return err
 			}
 		}
-	case reflect.Struct == t.Kind():
-		for i := 0; i < s.NumField(); i++ {
-			name, omitempty := fieldNameFromTags(t.Field(i), tags...)
+	case reflect.Struct:
+		for i := 0; i < srcVal.NumField(); i++ {
+			name, omitempty := fieldNameFromTags(srcType.Field(i), tags...)
 			if len(name) > 0 {
 				key, err := TryCast[K](name)
 				if err != nil {
 					return err
 				}
-				field := s.Field(i)
+				field := srcVal.Field(i)
 				fl := getValue(field.Interface())
 				if !omitempty || !IsEmpty(fl) {
 					if recursive {
@@ -71,7 +71,7 @@ func TryMapCopy[K comparable, V any](dst map[K]V, src any, recursive bool, tags 
 			}
 		}
 	default:
-		return wrapError(ErrUnsupportedSourceType, t.String())
+		return wrapError(ErrUnsupportedSourceType, srcType.String())
 	}
 	return nil
 }
@@ -85,11 +85,16 @@ func ToMap(dst, src any, recursive bool, tags ...string) error {
 
 	var (
 		err      error
-		destType = reflect.TypeOf(dst)
+		destVal  = reflectTarget(reflect.ValueOf(dst))
+		destType = destVal.Type()
 		s        = reflectTarget(reflect.ValueOf(src))
 		t        = s.Type()
 	)
-	dst = reflectTarget(reflect.ValueOf(dst)).Interface()
+
+	if dst = destVal.Interface(); dst == nil {
+		dst = reflect.MakeMap(destType).Interface()
+		destVal = reflect.ValueOf(dst)
+	}
 
 	switch dest := dst.(type) {
 	case map[any]any:
@@ -125,7 +130,7 @@ func ToMap(dst, src any, recursive bool, tags ...string) error {
 				}
 			}
 		default:
-			err = ErrUnsupportedSourceType
+			err = wrapError(ErrUnsupportedSourceType, t.String())
 		}
 	case map[string]any:
 		switch {
@@ -133,12 +138,12 @@ func ToMap(dst, src any, recursive bool, tags ...string) error {
 			for _, k := range s.MapKeys() {
 				field := s.MapIndex(k)
 				if recursive {
-					dest[ToString(k.Interface())], err = mapDestValue(field.Interface(), destType, recursive, tags...)
+					dest[Str(k.Interface())], err = mapDestValue(field.Interface(), destType, recursive, tags...)
 					if err != nil {
 						return err
 					}
 				} else {
-					dest[ToString(k.Interface())] = field.Interface()
+					dest[Str(k.Interface())] = field.Interface()
 				}
 			}
 		case reflect.Struct == t.Kind():
@@ -160,13 +165,13 @@ func ToMap(dst, src any, recursive bool, tags ...string) error {
 				}
 			}
 		default:
-			err = ErrUnsupportedSourceType
+			err = wrapError(ErrUnsupportedSourceType, t.String())
 		}
 	case map[string]string:
 		switch {
 		case reflect.Map == t.Kind():
 			for _, k := range s.MapKeys() {
-				dest[ToString(k.Interface())] = ToString(s.MapIndex(k).Interface())
+				dest[Str(k.Interface())] = Str(s.MapIndex(k).Interface())
 			}
 		case reflect.Struct == t.Kind():
 			for i := 0; i < s.NumField(); i++ {
@@ -174,15 +179,56 @@ func ToMap(dst, src any, recursive bool, tags ...string) error {
 				if len(name) > 0 {
 					fl := getValue(s.Field(i).Interface())
 					if !omitempty || !IsEmpty(fl) {
-						dest[name] = ToString(fl)
+						dest[name] = Str(fl)
 					}
 				} // end if
 			}
 		default:
-			err = ErrUnsupportedSourceType
+			err = wrapError(ErrUnsupportedSourceType, t.String())
 		}
 	default:
-		err = ErrUnsupportedType
+		if destType.Kind() == reflect.Map {
+			keyType := destType.Key()
+			elemType := destType.Elem()
+			switch {
+			case reflect.Map == t.Kind():
+				for _, k := range s.MapKeys() {
+					keyVal, err := ReflectTryToType(k, keyType, false)
+					if err != nil {
+						return wrapError(err, Str(k.Interface()))
+					}
+					mapVal := reflectTarget(s.MapIndex(k))
+					val, err := ReflectTryToType(mapVal, elemType, false)
+					if err != nil {
+						return wrapError(err, "`"+Str(k.Interface())+"` value")
+					}
+					destVal.SetMapIndex(reflect.ValueOf(keyVal), reflect.ValueOf(val))
+				}
+			case reflect.Struct == t.Kind():
+				for i := 0; i < s.NumField(); i++ {
+					name, omitempty := fieldNameFromTags(t.Field(i), tags...)
+					if len(name) > 0 {
+						flVal := reflectTarget(s.Field(i))
+						fl := getValue(flVal.Interface())
+						if !omitempty || !IsEmpty(fl) {
+							keyVal, err := TryToType(name, keyType)
+							if err != nil {
+								return wrapError(err, name)
+							}
+							val, err := ReflectTryToType(flVal, elemType, false)
+							if err != nil {
+								return wrapError(err, "`"+name+"` value")
+							}
+							destVal.SetMapIndex(reflect.ValueOf(keyVal), reflect.ValueOf(val))
+						}
+					} // end if
+				}
+			default:
+				err = wrapError(ErrUnsupportedSourceType, t.String())
+			}
+		} else {
+			err = wrapError(ErrUnsupportedType, destType.String())
+		}
 	}
 	return err
 }
@@ -241,32 +287,12 @@ func ToStringMap(src any, recursive bool, tags ...string) (map[string]string, er
 /// MARK: Helpers
 ///////////////////////////////////////////////////////////////////////////////
 
-func mapValueByStringKeys(src any, keys []string) any {
-	switch m := src.(type) {
-	case map[any]any:
-		for k, v := range m {
-			skey := Str(k)
-			for _, ks := range keys {
-				if skey == ks {
-					return v
-				}
-			}
-		}
-	case map[string]any:
-		for k, v := range m {
-			for _, ks := range keys {
-				if k == ks {
-					return v
-				}
-			}
-		}
-	case map[string]string:
-		for k, v := range m {
-			for _, ks := range keys {
-				if k == ks {
-					var i any = v
-					return i
-				}
+func reflectMapValueByStringKeys(src reflect.Value, keys []string) any {
+	mKeys := src.MapKeys()
+	for _, key := range keys {
+		for _, mKey := range mKeys {
+			if Str(mKey.Interface()) == key {
+				return src.MapIndex(mKey).Interface()
 			}
 		}
 	}
