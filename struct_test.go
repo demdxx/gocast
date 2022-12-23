@@ -1,6 +1,7 @@
 package gocast
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -9,7 +10,7 @@ import (
 
 type customInt int
 
-func (c *customInt) CastSet(v any) error {
+func (c *customInt) CastSet(ctx context.Context, v any) error {
 	*c = customInt(Int(v))
 	return nil
 }
@@ -28,15 +29,16 @@ type testStruct struct {
 
 func TestStructGetSetFieldValue(t *testing.T) {
 	st := &testStruct{}
+	ctx := context.TODO()
 
-	assert.NoError(t, SetStructFieldValue(&st, "Name", "TestName"), "set Name field value")
-	assert.NoError(t, SetStructFieldValue(&st, "Value", int64(127)), "set Value field value")
-	assert.NoError(t, SetStructFieldValue(&st, "Count", 3.1), "set Count field value")
-	assert.NoError(t, SetStructFieldValue(&st, "CreatedAt", "2020/10/10"), "set CreatedAt field value")
-	assert.NoError(t, SetStructFieldValue(&st, "UpdatedAt", time.Now().Unix()), "set UpdatedAt field value")
-	assert.NoError(t, SetStructFieldValue(&st, "PublishedAt", time.Now()), "set PublishedAt field value")
-	assert.NoError(t, SetStructFieldValue(&st, "AnyTarget", "hi"), "set AnyTarget field value")
-	assert.Error(t, SetStructFieldValue(&st, "UndefinedField", int64(127)), "set UndefinedField field value must be error")
+	assert.NoError(t, SetStructFieldValue(ctx, &st, "Name", "TestName"), "set Name field value")
+	assert.NoError(t, SetStructFieldValue(ctx, &st, "Value", int64(127)), "set Value field value")
+	assert.NoError(t, SetStructFieldValue(ctx, &st, "Count", 3.1), "set Count field value")
+	assert.NoError(t, SetStructFieldValue(ctx, &st, "CreatedAt", "2020/10/10"), "set CreatedAt field value")
+	assert.NoError(t, SetStructFieldValue(ctx, &st, "UpdatedAt", time.Now().Unix()), "set UpdatedAt field value")
+	assert.NoError(t, SetStructFieldValue(ctx, &st, "PublishedAt", time.Now()), "set PublishedAt field value")
+	assert.NoError(t, SetStructFieldValue(ctx, &st, "AnyTarget", "hi"), "set AnyTarget field value")
+	assert.Error(t, SetStructFieldValue(ctx, &st, "UndefinedField", int64(127)), "set UndefinedField field value must be error")
 
 	name, err := StructFieldValue(st, "Name")
 	assert.NoError(t, err, "get Name value")
@@ -121,10 +123,11 @@ func TestStructFieldTags(t *testing.T) {
 
 func BenchmarkGetSetFieldValue(b *testing.B) {
 	st := &struct{ Name string }{}
+	ctx := context.TODO()
 
 	b.Run("set", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			err := SetStructFieldValue(st, "Name", "value")
+			err := SetStructFieldValue(ctx, st, "Name", "value")
 			if err != nil {
 				b.Error("set field error", err.Error())
 			}

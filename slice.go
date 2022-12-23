@@ -133,17 +133,17 @@ func ToFloat64Slice(v any) []float64 {
 // Deprecated: Use Slice[type](v) or TrySlice[type](v) instead
 func ToSlice(dst, src any, tags ...string) error {
 	if dst == nil || src == nil {
-		return errInvalidParams
+		return ErrInvalidParams
 	}
 
 	dstSlice := reflectTarget(reflect.ValueOf(dst))
 	if reflect.Slice != dstSlice.Kind() {
-		return errInvalidParams
+		return ErrInvalidParams
 	}
 
 	srcSlice := reflectTarget(reflect.ValueOf(src))
 	if reflect.Slice != srcSlice.Kind() {
-		return errInvalidParams
+		return ErrInvalidParams
 	}
 
 	dstElemType := dstSlice.Type().Elem()

@@ -26,7 +26,7 @@ import (
 // TryTo cast any input type into the target
 func TryTo(v, to any, tags ...string) (any, error) {
 	if v == nil || to == nil {
-		return nil, errInvalidParams
+		return nil, ErrInvalidParams
 	}
 	return TryToType(v, reflect.ValueOf(to).Type(), tags...)
 }
@@ -40,7 +40,7 @@ func To(v, to any, tags ...string) any {
 // TryToType cast any input type into the target reflection
 func TryToType(v any, t reflect.Type, tags ...string) (any, error) {
 	if v == nil || t == nil {
-		return nil, errInvalidParams
+		return nil, ErrInvalidParams
 	}
 	vl, err := ReflectTryToType(reflect.ValueOf(v), t, true, tags...)
 	return vl, err

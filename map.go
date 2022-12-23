@@ -21,14 +21,12 @@ package gocast
 
 import (
 	"reflect"
-
-	"github.com/pkg/errors"
 )
 
 // TryMapCopy converts source into destination or return error
 func TryMapCopy[K comparable, V any](dst map[K]V, src any, recursive bool, tags ...string) error {
 	if dst == nil || src == nil {
-		return errInvalidParams
+		return ErrInvalidParams
 	}
 	var (
 		s = reflectTarget(reflect.ValueOf(src))
@@ -73,7 +71,7 @@ func TryMapCopy[K comparable, V any](dst map[K]V, src any, recursive bool, tags 
 			}
 		}
 	default:
-		return errors.Wrap(errUnsupportedSourceType, t.String())
+		return wrapError(ErrUnsupportedSourceType, t.String())
 	}
 	return nil
 }
@@ -82,7 +80,7 @@ func TryMapCopy[K comparable, V any](dst map[K]V, src any, recursive bool, tags 
 // tag defines the tags name in the structure to map the keys
 func ToMap(dst, src any, recursive bool, tags ...string) error {
 	if dst == nil || src == nil {
-		return errInvalidParams
+		return ErrInvalidParams
 	}
 
 	var (
@@ -127,7 +125,7 @@ func ToMap(dst, src any, recursive bool, tags ...string) error {
 				}
 			}
 		default:
-			err = errUnsupportedSourceType
+			err = ErrUnsupportedSourceType
 		}
 	case map[string]any:
 		switch {
@@ -162,7 +160,7 @@ func ToMap(dst, src any, recursive bool, tags ...string) error {
 				}
 			}
 		default:
-			err = errUnsupportedSourceType
+			err = ErrUnsupportedSourceType
 		}
 	case map[string]string:
 		switch {
@@ -181,10 +179,10 @@ func ToMap(dst, src any, recursive bool, tags ...string) error {
 				} // end if
 			}
 		default:
-			err = errUnsupportedSourceType
+			err = ErrUnsupportedSourceType
 		}
 	default:
-		err = errUnsupportedType
+		err = ErrUnsupportedType
 	}
 	return err
 }
