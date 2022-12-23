@@ -20,7 +20,6 @@
 package gocast
 
 import (
-	"database/sql"
 	"reflect"
 	"strings"
 	"time"
@@ -28,14 +27,19 @@ import (
 	"github.com/pkg/errors"
 )
 
+// CastSetter interface from some type into the specific value
+type CastSetter interface {
+	CastSet(v any) error
+}
+
 // TryCopyStruct convert any input type into the target structure
 func TryCopyStruct(dst, src any, tags ...string) (err error) {
 	if dst == nil || src == nil {
 		return errInvalidParams
 	}
 
-	if sintf, ok := dst.(sql.Scanner); ok {
-		if sintf.Scan(src) == nil {
+	if sintf, ok := dst.(CastSetter); ok {
+		if sintf.CastSet(src) == nil {
 			return nil
 		}
 	}
@@ -45,27 +49,26 @@ func TryCopyStruct(dst, src any, tags ...string) (err error) {
 		switch v := src.(type) {
 		case time.Time:
 			s := reflectTarget(reflect.ValueOf(dst))
-			s.Set(reflect.ValueOf(v))
+			err = setFieldValue(s, v)
 		case *time.Time:
 			s := reflectTarget(reflect.ValueOf(dst))
-			s.Set(reflect.ValueOf(*v))
+			err = setFieldValue(s, *v)
 		case string:
 			var tm time.Time
 			if tm, err = ParseTime(v); err == nil {
 				s := reflectTarget(reflect.ValueOf(dst))
-				s.Set(reflect.ValueOf(tm))
+				err = setFieldValue(s, tm)
 			}
 		case int64:
 			s := reflectTarget(reflect.ValueOf(dst))
-			s.Set(reflect.ValueOf(time.Unix(v, 0)))
+			err = setFieldValue(s, time.Unix(v, 0))
 		case uint64:
 			s := reflectTarget(reflect.ValueOf(dst))
-			s.Set(reflect.ValueOf(time.Unix(int64(v), 0)))
+			err = setFieldValue(s, time.Unix(int64(v), 0))
 		default:
 			err = errUnsupportedType
 		}
 	default:
-
 		s := reflectTarget(reflect.ValueOf(dst))
 		t := s.Type()
 
@@ -85,7 +88,7 @@ func TryCopyStruct(dst, src any, tags ...string) (err error) {
 
 					// Set field value
 					if v == nil {
-						f.Set(reflect.Zero(f.Type()))
+						err = setFieldValueReflect(f, reflect.Zero(f.Type()))
 					} else {
 						switch f.Kind() {
 						case reflect.Struct:
@@ -100,16 +103,22 @@ func TryCopyStruct(dst, src any, tags ...string) (err error) {
 									val = val.Elem()
 								}
 								if val.Kind() == f.Kind() {
-									f.Set(val)
+									err = setFieldValueReflect(f, val)
 								} else {
 									err = errUnsupportedType
-									break
 								}
-							} else {
-								return err
+							} else if setter, _ := f.Interface().(CastSetter); setter != nil {
+								err = setter.CastSet(v)
+							} else if f.CanAddr() {
+								if setter, _ := f.Addr().Interface().(CastSetter); setter != nil {
+									err = setter.CastSet(v)
+								}
 							}
 						} // end switch
 					} // end else
+					if err != nil {
+						break
+					}
 				}
 			}
 		default:
@@ -189,7 +198,7 @@ func StructFieldValue(st any, name string) (any, error) {
 }
 
 // SetStructFieldValue puts value into the struct field
-func SetStructFieldValue(st any, name string, value any) error {
+func SetStructFieldValue(st any, name string, value any) (err error) {
 	s := reflectTarget(reflect.ValueOf(st))
 	t := s.Type()
 	if _, ok := t.FieldByName(name); ok {
@@ -197,8 +206,34 @@ func SetStructFieldValue(st any, name string, value any) error {
 		if !field.CanSet() {
 			return errors.Wrap(ErrStructFieldValueCantBeChanged, name)
 		}
-		field.Set(reflect.ValueOf(value))
-		return nil
+		switch field.Interface().(type) {
+		case time.Time, *time.Time:
+			switch v := value.(type) {
+			case time.Time:
+				s := reflectTarget(field)
+				err = setFieldValue(s, v)
+			case *time.Time:
+				s := reflectTarget(field)
+				err = setFieldValue(s, *v)
+			case string:
+				var tm time.Time
+				if tm, err = ParseTime(v); err == nil {
+					s := reflectTarget(field)
+					err = setFieldValue(s, tm)
+				}
+			case int64:
+				s := reflectTarget(field)
+				err = setFieldValue(s, time.Unix(v, 0))
+			case uint64:
+				s := reflectTarget(field)
+				err = setFieldValue(s, time.Unix(int64(v), 0))
+			default:
+				err = errUnsupportedType
+			}
+		default:
+			err = setFieldValue(field, value)
+		}
+		return err
 	}
 	return errors.Wrap(ErrStructFieldNameUndefined, name)
 }
@@ -208,6 +243,44 @@ func SetStructFieldValue(st any, name string, value any) error {
 ///////////////////////////////////////////////////////////////////////////////
 
 var fieldNameArr = []string{"field", "schema", "sql", "json", "xml", "yaml"}
+
+func setFieldValue(field reflect.Value, val any) error {
+	if setter, _ := field.Interface().(CastSetter); setter != nil {
+		return setter.CastSet(val)
+	} else if field.CanAddr() {
+		if setter, _ := field.Addr().Interface().(CastSetter); setter != nil {
+			return setter.CastSet(val)
+		} else if vl := reflect.ValueOf(val); field.Kind() == vl.Kind() {
+			field.Set(vl)
+		} else {
+			return errUnsupportedType
+		}
+	} else if vl := reflect.ValueOf(val); field.Kind() == vl.Kind() {
+		field.Set(vl)
+	} else {
+		return errUnsupportedType
+	}
+	return nil
+}
+
+func setFieldValueReflect(field, val reflect.Value) error {
+	if setter, _ := field.Interface().(CastSetter); setter != nil {
+		return setter.CastSet(val.Interface())
+	} else if field.CanAddr() {
+		if setter, _ := field.Addr().Interface().(CastSetter); setter != nil {
+			return setter.CastSet(val.Interface())
+		} else if field.Kind() == val.Kind() {
+			field.Set(val)
+		} else {
+			return errUnsupportedType
+		}
+	} else if field.Kind() == val.Kind() {
+		field.Set(val)
+	} else {
+		return errUnsupportedType
+	}
+	return nil
+}
 
 func fieldNames(f reflect.StructField, tags ...string) []string {
 	if len(tags) > 0 {
