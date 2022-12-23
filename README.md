@@ -3,7 +3,7 @@ GoCast
 [![GoDoc](https://godoc.org/github.com/demdxx/gocast?status.svg)](https://godoc.org/github.com/demdxx/gocast)
 [![Build Status](https://github.com/demdxx/gocast/workflows/run%20tests/badge.svg)](https://github.com/demdxx/gocast/actions?workflow=run%20tests)
 [![Go Report Card](https://goreportcard.com/badge/github.com/demdxx/gocast)](https://goreportcard.com/report/github.com/demdxx/gocast)
-[![Coverage Status](https://coveralls.io/repos/github/demdxx/gocast/badge.svg)](https://coveralls.io/github/demdxx/gocast)
+[![Coverage Status](https://coveralls.io/repos/github/demdxx/gocast/badge.svg?branch=master)](https://coveralls.io/github/demdxx/gocast?branch=master)
 
 Easily convert basic types into any other basic types.
 
