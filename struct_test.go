@@ -22,6 +22,7 @@ func TestStructGetSetFieldValue(t *testing.T) {
 		CreatedAt   time.Time
 		UpdatedAt   time.Time
 		PublishedAt time.Time
+		AnyTarget   any
 	}{}
 
 	assert.NoError(t, SetStructFieldValue(&st, "Name", "TestName"), "set Name field value")
@@ -30,6 +31,7 @@ func TestStructGetSetFieldValue(t *testing.T) {
 	assert.NoError(t, SetStructFieldValue(&st, "CreatedAt", "2020/10/10"), "set CreatedAt field value")
 	assert.NoError(t, SetStructFieldValue(&st, "UpdatedAt", time.Now().Unix()), "set UpdatedAt field value")
 	assert.NoError(t, SetStructFieldValue(&st, "PublishedAt", time.Now()), "set PublishedAt field value")
+	assert.NoError(t, SetStructFieldValue(&st, "AnyTarget", "hi"), "set AnyTarget field value")
 	assert.Error(t, SetStructFieldValue(&st, "UndefinedField", int64(127)), "set UndefinedField field value must be error")
 
 	name, err := StructFieldValue(st, "Name")
@@ -56,6 +58,10 @@ func TestStructGetSetFieldValue(t *testing.T) {
 	assert.NoError(t, err, "get PublishedAt value")
 	assert.Equal(t, time.Now().Year(), publishedAt.(time.Time).Year())
 
+	anyTarget, err := StructFieldValue(st, "AnyTarget")
+	assert.NoError(t, err, "get AnyTarget value")
+	assert.Equal(t, "hi", anyTarget)
+
 	_, err = StructFieldValue(st, "UndefinedField")
 	assert.Error(t, err, "get UndefinedField value must be error")
 }
@@ -68,6 +74,7 @@ func TestStructCast(t *testing.T) {
 		CreatedAt   time.Time
 		UpdatedAt   time.Time
 		PublishedAt time.Time
+		AnyTarget   any
 	}
 	res, err := Struct[testStruct](map[string]any{
 		"Name":        "test",
@@ -76,6 +83,7 @@ func TestStructCast(t *testing.T) {
 		"CreatedAt":   "2020/10/10",
 		"UpdatedAt":   time.Now().Unix(),
 		"PublishedAt": time.Now(),
+		"AnyTarget":   "hi",
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "test", res.Name)
@@ -84,6 +92,7 @@ func TestStructCast(t *testing.T) {
 	assert.Equal(t, 2020, res.CreatedAt.Year())
 	assert.Equal(t, time.Now().Year(), res.UpdatedAt.Year())
 	assert.Equal(t, time.Now().Year(), res.PublishedAt.Year())
+	assert.Equal(t, "hi", res.AnyTarget)
 }
 
 func BenchmarkGetSetFieldValue(b *testing.B) {

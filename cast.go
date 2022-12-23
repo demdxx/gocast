@@ -95,6 +95,8 @@ func ReflectTryToType(v reflect.Value, t reflect.Type, recursive bool, tags ...s
 		if err = ToMap(mp, v.Interface(), recursive, tags...); err == nil {
 			return mp, nil
 		}
+	case reflect.Interface:
+		return v.Interface(), nil
 	case reflect.Ptr:
 		var vl any
 		if vl, err = ReflectTryToType(v, t.Elem(), true, tags...); err == nil {

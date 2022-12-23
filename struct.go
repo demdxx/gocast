@@ -102,7 +102,7 @@ func TryCopyStruct(dst, src any, tags ...string) (err error) {
 								if val.Kind() == reflect.Ptr && val.Kind() != f.Kind() {
 									val = val.Elem()
 								}
-								if val.Kind() == f.Kind() {
+								if val.Kind() == f.Kind() || f.Kind() == reflect.Interface {
 									err = setFieldValueReflect(f, val)
 								} else {
 									err = errUnsupportedType
@@ -250,15 +250,15 @@ func setFieldValue(field reflect.Value, val any) error {
 	} else if field.CanAddr() {
 		if setter, _ := field.Addr().Interface().(CastSetter); setter != nil {
 			return setter.CastSet(val)
-		} else if vl := reflect.ValueOf(val); field.Kind() == vl.Kind() {
+		} else if vl := reflect.ValueOf(val); field.Kind() == vl.Kind() || field.Kind() == reflect.Interface {
 			field.Set(vl)
 		} else {
-			return errUnsupportedType
+			return errors.Wrap(errUnsupportedType, field.Type().String())
 		}
 	} else if vl := reflect.ValueOf(val); field.Kind() == vl.Kind() {
 		field.Set(vl)
 	} else {
-		return errUnsupportedType
+		return errors.Wrap(errUnsupportedType, field.Type().String())
 	}
 	return nil
 }
@@ -269,15 +269,15 @@ func setFieldValueReflect(field, val reflect.Value) error {
 	} else if field.CanAddr() {
 		if setter, _ := field.Addr().Interface().(CastSetter); setter != nil {
 			return setter.CastSet(val.Interface())
-		} else if field.Kind() == val.Kind() {
+		} else if field.Kind() == val.Kind() || field.Kind() == reflect.Interface {
 			field.Set(val)
 		} else {
-			return errUnsupportedType
+			return errors.Wrap(errUnsupportedType, field.Type().String())
 		}
 	} else if field.Kind() == val.Kind() {
 		field.Set(val)
 	} else {
-		return errUnsupportedType
+		return errors.Wrap(errUnsupportedType, field.Type().String())
 	}
 	return nil
 }
