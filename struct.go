@@ -46,28 +46,7 @@ func TryCopyStruct(dst, src any, tags ...string) (err error) {
 
 	switch dst.(type) {
 	case time.Time, *time.Time:
-		switch v := src.(type) {
-		case time.Time:
-			s := reflectTarget(reflect.ValueOf(dst))
-			err = setFieldValue(s, v)
-		case *time.Time:
-			s := reflectTarget(reflect.ValueOf(dst))
-			err = setFieldValue(s, *v)
-		case string:
-			var tm time.Time
-			if tm, err = ParseTime(v); err == nil {
-				s := reflectTarget(reflect.ValueOf(dst))
-				err = setFieldValue(s, tm)
-			}
-		case int64:
-			s := reflectTarget(reflect.ValueOf(dst))
-			err = setFieldValue(s, time.Unix(v, 0))
-		case uint64:
-			s := reflectTarget(reflect.ValueOf(dst))
-			err = setFieldValue(s, time.Unix(int64(v), 0))
-		default:
-			err = errUnsupportedType
-		}
+		err = setFieldTimeValue(reflect.ValueOf(dst), src)
 	default:
 		s := reflectTarget(reflect.ValueOf(dst))
 		t := s.Type()
@@ -76,53 +55,55 @@ func TryCopyStruct(dst, src any, tags ...string) (err error) {
 		case map[any]any, map[string]any, map[string]string:
 			for i := 0; i < s.NumField(); i++ {
 				f := s.Field(i)
-				if f.CanSet() {
-					// Get passable field names
-					names := fieldNames(t.Field(i), tags...)
-					if len(names) < 1 {
-						continue
-					}
+				if !f.CanSet() {
+					continue
+				}
 
-					// Get value from map
-					v := mapValueByStringKeys(src, names)
+				// Get passable field names
+				names := fieldNames(t.Field(i), tags...)
+				if len(names) < 1 {
+					continue
+				}
 
-					// Set field value
-					if v == nil {
-						err = setFieldValueReflect(f, reflect.Zero(f.Type()))
-					} else {
-						switch f.Kind() {
-						case reflect.Struct:
-							if err = TryCopyStruct(f.Addr().Interface(), v, tags...); err != nil {
-								return err
+				// Get value from map
+				v := mapValueByStringKeys(src, names)
+
+				// Set field value
+				if v == nil {
+					err = setFieldValueReflect(f, reflect.Zero(f.Type()))
+				} else {
+					switch f.Kind() {
+					case reflect.Struct:
+						if err = TryCopyStruct(f.Addr().Interface(), v, tags...); err != nil {
+							return err
+						}
+					default:
+						var vl any
+						if vl, err = TryToType(v, f.Type(), tags...); err == nil {
+							val := reflect.ValueOf(vl)
+							if val.Kind() == reflect.Ptr && val.Kind() != f.Kind() {
+								val = val.Elem()
 							}
-						default:
-							var vl any
-							if vl, err = TryToType(v, f.Type(), tags...); err == nil {
-								val := reflect.ValueOf(vl)
-								if val.Kind() == reflect.Ptr && val.Kind() != f.Kind() {
-									val = val.Elem()
-								}
-								if val.Kind() == f.Kind() || f.Kind() == reflect.Interface {
-									err = setFieldValueReflect(f, val)
-								} else {
-									err = errUnsupportedType
-								}
-							} else if setter, _ := f.Interface().(CastSetter); setter != nil {
+							if val.Kind() == f.Kind() || f.Kind() == reflect.Interface {
+								err = setFieldValueReflect(f, val)
+							} else {
+								err = errors.Wrap(errUnsupportedType, names[0])
+							}
+						} else if setter, _ := f.Interface().(CastSetter); setter != nil {
+							err = setter.CastSet(v)
+						} else if f.CanAddr() {
+							if setter, _ := f.Addr().Interface().(CastSetter); setter != nil {
 								err = setter.CastSet(v)
-							} else if f.CanAddr() {
-								if setter, _ := f.Addr().Interface().(CastSetter); setter != nil {
-									err = setter.CastSet(v)
-								}
 							}
-						} // end switch
-					} // end else
-					if err != nil {
-						break
-					}
+						}
+					} // end switch
+				} // end else
+				if err != nil {
+					break
 				}
 			}
 		default:
-			err = errUnsupportedType
+			err = errors.Wrap(errUnsupportedType, t.Name())
 		}
 	}
 	return err
@@ -206,33 +187,7 @@ func SetStructFieldValue(st any, name string, value any) (err error) {
 		if !field.CanSet() {
 			return errors.Wrap(ErrStructFieldValueCantBeChanged, name)
 		}
-		switch field.Interface().(type) {
-		case time.Time, *time.Time:
-			switch v := value.(type) {
-			case time.Time:
-				s := reflectTarget(field)
-				err = setFieldValue(s, v)
-			case *time.Time:
-				s := reflectTarget(field)
-				err = setFieldValue(s, *v)
-			case string:
-				var tm time.Time
-				if tm, err = ParseTime(v); err == nil {
-					s := reflectTarget(field)
-					err = setFieldValue(s, tm)
-				}
-			case int64:
-				s := reflectTarget(field)
-				err = setFieldValue(s, time.Unix(v, 0))
-			case uint64:
-				s := reflectTarget(field)
-				err = setFieldValue(s, time.Unix(int64(v), 0))
-			default:
-				err = errUnsupportedType
-			}
-		default:
-			err = setFieldValue(field, value)
-		}
+		err = setFieldValue(field, value)
 		return err
 	}
 	return errors.Wrap(ErrStructFieldNameUndefined, name)
@@ -244,42 +199,81 @@ func SetStructFieldValue(st any, name string, value any) (err error) {
 
 var fieldNameArr = []string{"field", "schema", "sql", "json", "xml", "yaml"}
 
-func setFieldValue(field reflect.Value, val any) error {
-	if setter, _ := field.Interface().(CastSetter); setter != nil {
-		return setter.CastSet(val)
-	} else if field.CanAddr() {
-		if setter, _ := field.Addr().Interface().(CastSetter); setter != nil {
-			return setter.CastSet(val)
-		} else if vl := reflect.ValueOf(val); field.Kind() == vl.Kind() || field.Kind() == reflect.Interface {
+func setFieldValue(field reflect.Value, value any) (err error) {
+	switch field.Interface().(type) {
+	case time.Time, *time.Time:
+		err = setFieldTimeValue(field, value)
+	default:
+		if setter, _ := field.Interface().(CastSetter); setter != nil {
+			return setter.CastSet(value)
+		} else if field.CanAddr() {
+			if setter, _ := field.Addr().Interface().(CastSetter); setter != nil {
+				return setter.CastSet(value)
+			} else if vl := reflect.ValueOf(value); field.Kind() == vl.Kind() || field.Kind() == reflect.Interface {
+				field.Set(vl)
+			} else {
+				return errors.Wrap(errUnsupportedType, field.Type().String())
+			}
+		} else if vl := reflect.ValueOf(value); field.Kind() == vl.Kind() || field.Kind() == reflect.Interface {
 			field.Set(vl)
 		} else {
 			return errors.Wrap(errUnsupportedType, field.Type().String())
 		}
-	} else if vl := reflect.ValueOf(val); field.Kind() == vl.Kind() {
-		field.Set(vl)
-	} else {
-		return errors.Wrap(errUnsupportedType, field.Type().String())
 	}
-	return nil
+	return err
 }
 
-func setFieldValueReflect(field, val reflect.Value) error {
-	if setter, _ := field.Interface().(CastSetter); setter != nil {
-		return setter.CastSet(val.Interface())
-	} else if field.CanAddr() {
-		if setter, _ := field.Addr().Interface().(CastSetter); setter != nil {
-			return setter.CastSet(val.Interface())
-		} else if field.Kind() == val.Kind() || field.Kind() == reflect.Interface {
-			field.Set(val)
+func setFieldValueReflect(field, value reflect.Value) (err error) {
+	switch field.Interface().(type) {
+	case time.Time, *time.Time:
+		err = setFieldTimeValue(field, value.Interface())
+	default:
+		if setter, _ := field.Interface().(CastSetter); setter != nil {
+			return setter.CastSet(value.Interface())
+		} else if field.CanAddr() {
+			if setter, _ := field.Addr().Interface().(CastSetter); setter != nil {
+				return setter.CastSet(value.Interface())
+			} else if field.Kind() == value.Kind() || field.Kind() == reflect.Interface {
+				field.Set(value)
+			} else {
+				return errors.Wrap(errUnsupportedType, field.Type().String())
+			}
+		} else if field.Kind() == value.Kind() || field.Kind() == reflect.Interface {
+			field.Set(value)
 		} else {
 			return errors.Wrap(errUnsupportedType, field.Type().String())
 		}
-	} else if field.Kind() == val.Kind() {
-		field.Set(val)
-	} else {
-		return errors.Wrap(errUnsupportedType, field.Type().String())
 	}
-	return nil
+	return err
+}
+
+func setFieldTimeValue(field reflect.Value, value any) (err error) {
+	switch v := value.(type) {
+	case nil:
+		s := reflectTarget(field)
+		s.Set(reflect.ValueOf(time.Time{}))
+	case time.Time:
+		s := reflectTarget(field)
+		s.Set(reflect.ValueOf(v))
+	case *time.Time:
+		s := reflectTarget(field)
+		s.Set(reflect.ValueOf(*v))
+	case string:
+		var tm time.Time
+		if tm, err = ParseTime(v); err == nil {
+			s := reflectTarget(field)
+			s.Set(reflect.ValueOf(tm))
+		}
+	case int64:
+		s := reflectTarget(field)
+		s.Set(reflect.ValueOf(time.Unix(v, 0)))
+	case uint64:
+		s := reflectTarget(field)
+		s.Set(reflect.ValueOf(time.Unix(int64(v), 0)))
+	default:
+		err = errors.Wrap(errUnsupportedType, field.String())
+	}
+	return err
 }
 
 func fieldNames(f reflect.StructField, tags ...string) []string {

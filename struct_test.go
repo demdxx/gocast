@@ -14,16 +14,20 @@ func (c *customInt) CastSet(v any) error {
 	return nil
 }
 
+type testStruct struct {
+	Name        string    `field:"name"`
+	Value       int64     `field:"value"`
+	Count       customInt `field:"count"`
+	AnyTarget   any       `field:"anytarget"`
+	NilVal      any       `field:"nilval"`
+	ignore      bool      `field:"ignore"`
+	CreatedAt   time.Time `field:"created_at"`
+	UpdatedAt   time.Time `field:"updated_at"`
+	PublishedAt time.Time `field:"published_at"`
+}
+
 func TestStructGetSetFieldValue(t *testing.T) {
-	st := &struct {
-		Name        string
-		Value       int64
-		Count       customInt
-		CreatedAt   time.Time
-		UpdatedAt   time.Time
-		PublishedAt time.Time
-		AnyTarget   any
-	}{}
+	st := &testStruct{}
 
 	assert.NoError(t, SetStructFieldValue(&st, "Name", "TestName"), "set Name field value")
 	assert.NoError(t, SetStructFieldValue(&st, "Value", int64(127)), "set Value field value")
@@ -67,15 +71,6 @@ func TestStructGetSetFieldValue(t *testing.T) {
 }
 
 func TestStructCast(t *testing.T) {
-	type testStruct struct {
-		Name        string
-		Value       int64
-		Count       customInt
-		CreatedAt   time.Time
-		UpdatedAt   time.Time
-		PublishedAt time.Time
-		AnyTarget   any
-	}
 	res, err := Struct[testStruct](map[string]any{
 		"Name":        "test",
 		"Value":       "1900",
@@ -84,6 +79,7 @@ func TestStructCast(t *testing.T) {
 		"UpdatedAt":   time.Now().Unix(),
 		"PublishedAt": time.Now(),
 		"AnyTarget":   "hi",
+		"NilVal":      nil,
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "test", res.Name)
@@ -93,6 +89,34 @@ func TestStructCast(t *testing.T) {
 	assert.Equal(t, time.Now().Year(), res.UpdatedAt.Year())
 	assert.Equal(t, time.Now().Year(), res.PublishedAt.Year())
 	assert.Equal(t, "hi", res.AnyTarget)
+	assert.Equal(t, false, res.ignore)
+	assert.Nil(t, res.NilVal)
+}
+
+func TestStructFields(t *testing.T) {
+	fields := StructFields(testStruct{}, "-")
+	assert.ElementsMatch(t,
+		[]string{"Name", "Value", "Count", "CreatedAt", "UpdatedAt",
+			"PublishedAt", "AnyTarget", "NilVal", "ignore"}, fields)
+	fields = StructFields(testStruct{}, "")
+	assert.ElementsMatch(t,
+		[]string{"name", "value", "count", "created_at", "updated_at",
+			"published_at", "anytarget", "nilval", "ignore"}, fields)
+}
+
+func TestStructFieldTags(t *testing.T) {
+	fields := StructFieldTags(testStruct{}, "field")
+	assert.Equal(t,
+		map[string]string{
+			"AnyTarget":   "anytarget",
+			"Count":       "count",
+			"Name":        "name",
+			"NilVal":      "nilval",
+			"CreatedAt":   "created_at",
+			"UpdatedAt":   "updated_at",
+			"PublishedAt": "published_at",
+			"Value":       "value",
+			"ignore":      "ignore"}, fields)
 }
 
 func BenchmarkGetSetFieldValue(b *testing.B) {
