@@ -130,7 +130,12 @@ func TryCastValue[R any, T any](v T, recursive bool, tags ...string) (R, error) 
 	if err != nil {
 		return rVal, err
 	}
-	return val.(R), nil
+	switch nval := val.(type) {
+	case *R:
+		return *nval, nil
+	default:
+		return val.(R), nil
+	}
 }
 
 // TryCastRecursive source type into the target type with recursive data converting

@@ -58,6 +58,9 @@ func TryCopyStruct(dst, src any, tags ...string) (err error) {
 		case int64:
 			s := reflectTarget(reflect.ValueOf(dst))
 			s.Set(reflect.ValueOf(time.Unix(v, 0)))
+		case uint64:
+			s := reflectTarget(reflect.ValueOf(dst))
+			s.Set(reflect.ValueOf(time.Unix(int64(v), 0)))
 		default:
 			err = errUnsupportedType
 		}
@@ -91,7 +94,7 @@ func TryCopyStruct(dst, src any, tags ...string) (err error) {
 							}
 						default:
 							var vl any
-							if vl, err = TryToType(reflect.ValueOf(v), f.Type(), tags...); err == nil {
+							if vl, err = TryToType(v, f.Type(), tags...); err == nil {
 								val := reflect.ValueOf(vl)
 								if val.Kind() == reflect.Ptr && val.Kind() != f.Kind() {
 									val = val.Elem()

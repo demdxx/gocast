@@ -73,3 +73,18 @@ func ToFloat32(v any) float32 {
 func ToFloat(v any) float64 {
 	return Number[float64](v)
 }
+
+// Float from any other basic type, float64 by default
+func Float(v any) float64 {
+	return Number[float64](v)
+}
+
+// Float64 from any other basic type
+func Float64(v any) float64 {
+	return Number[float64](v)
+}
+
+// Float32 from any other basic type
+func Float32(v any) float32 {
+	return Number[float32](v)
+}

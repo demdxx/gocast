@@ -68,28 +68,28 @@ func ReflectToInt64(v reflect.Value) int64 {
 
 // ToInt64 from any other basic types
 //
-// Deprecated: Use Number[int64](v) instead
+// Deprecated: Use Number[int64](v) or Int64 instead
 func ToInt64(v any) int64 {
 	return Number[int64](v)
 }
 
 // ToInt32 from any other basic types
 //
-// Deprecated: Use Number[int32](v) instead
+// Deprecated: Use Number[int32](v) or Int32 instead
 func ToInt32(v any) int32 {
 	return int32(ToInt64(v))
 }
 
 // ToInt16 from any other basic types
 //
-// Deprecated: Use Number[int16](v) instead
+// Deprecated: Use Number[int16](v) or Int16 instead
 func ToInt16(v any) int16 {
 	return int16(ToInt64(v))
 }
 
 // ToInt from any other basic types
 //
-// Deprecated: Use Number[int](v) instead
+// Deprecated: Use Number[int](v) or Int instead
 func ToInt(v any) int {
 	return int(ToInt64(v))
 }
@@ -137,28 +137,78 @@ func ToUint64ByReflect(v reflect.Value) uint64 {
 
 // ToUint64 from any other basic types
 //
-// Deprecated: Use Number[uint64](v) instead
+// Deprecated: Use Number[uint64](v) or Uint64 instead
 func ToUint64(v any) uint64 {
 	return Number[uint64](v)
 }
 
 // ToUint32 from any other basic types
 //
-// Deprecated: Use Number[uint32](v) instead
+// Deprecated: Use Number[uint32](v) or Uint32 instead
 func ToUint32(v any) uint32 {
 	return uint32(ToUint64(v))
 }
 
 // ToUint32 from any other basic types
 //
-// Deprecated: Use Number[uint16](v) instead
+// Deprecated: Use Number[uint16](v) or Uint16 instead
 func ToUint16(v any) uint16 {
 	return uint16(ToUint64(v))
 }
 
 // ToUint from any other basic types
 //
-// Deprecated: Use Number[uint](v) instead
+// Deprecated: Use Number[uint](v) or Uint instead
 func ToUint(v any) uint {
 	return uint(ToUint64(v))
+}
+
+// Int from any other basic type
+func Int(v any) int {
+	return Number[int](v)
+}
+
+// Int8 from any other basic type
+func Int8(v any) int8 {
+	return Number[int8](v)
+}
+
+// Int16 from any other basic type
+func Int16(v any) int16 {
+	return Number[int16](v)
+}
+
+// Int32 from any other basic type
+func Int32(v any) int32 {
+	return Number[int32](v)
+}
+
+// Int64 from any other basic type
+func Int64(v any) int64 {
+	return Number[int64](v)
+}
+
+// Uint from any other basic type
+func Uint(v any) uint {
+	return Number[uint](v)
+}
+
+// Uint8 from any other basic type
+func Uint8(v any) uint8 {
+	return Number[uint8](v)
+}
+
+// Uint16 from any other basic type
+func Uint16(v any) uint16 {
+	return Number[uint16](v)
+}
+
+// Uint32 from any other basic type
+func Uint32(v any) uint32 {
+	return Number[uint32](v)
+}
+
+// Uint64 from any other basic type
+func Uint64(v any) uint64 {
+	return Number[uint64](v)
 }
