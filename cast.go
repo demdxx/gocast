@@ -20,11 +20,17 @@
 package gocast
 
 import (
+	"context"
 	"reflect"
 )
 
 // TryTo cast any input type into the target
 func TryTo(v, to any, tags ...string) (any, error) {
+	return TryToContext(context.Background(), v, reflect.TypeOf(to), tags...)
+}
+
+// TryToContext cast any input type into the target
+func TryToContext(ctx context.Context, v, to any, tags ...string) (any, error) {
 	if v == nil || to == nil {
 		return nil, ErrInvalidParams
 	}
@@ -39,10 +45,15 @@ func To(v, to any, tags ...string) any {
 
 // TryToType cast any input type into the target reflection
 func TryToType(v any, t reflect.Type, tags ...string) (any, error) {
+	return TryToTypeContext(context.Background(), v, t, tags...)
+}
+
+// TryToTypeContext cast any input type into the target reflection
+func TryToTypeContext(ctx context.Context, v any, t reflect.Type, tags ...string) (any, error) {
 	if v == nil || t == nil {
 		return nil, ErrInvalidParams
 	}
-	vl, err := ReflectTryToType(reflect.ValueOf(v), t, true, tags...)
+	vl, err := ReflectTryToTypeContext(ctx, reflect.ValueOf(v), t, true, tags...)
 	return vl, err
 }
 
@@ -54,6 +65,11 @@ func ToType(v any, t reflect.Type, tags ...string) any {
 
 // ReflectTryToType converts reflection value to reflection type or returns error
 func ReflectTryToType(v reflect.Value, t reflect.Type, recursive bool, tags ...string) (any, error) {
+	return ReflectTryToTypeContext(context.Background(), v, t, recursive, tags...)
+}
+
+// ReflectTryToTypeContext converts reflection value to reflection type or returns error
+func ReflectTryToTypeContext(ctx context.Context, v reflect.Value, t reflect.Type, recursive bool, tags ...string) (any, error) {
 	v = reflectTarget(v)
 	if v.Type() == t && !v.CanAddr() {
 		return v.Interface(), nil
@@ -90,7 +106,7 @@ func ReflectTryToType(v reflect.Value, t reflect.Type, recursive bool, tags ...s
 		return Number[float64](v.Interface()), nil
 	case reflect.Slice:
 		slice := reflect.New(t)
-		if err = ToSlice(slice.Interface(), v.Interface(), tags...); err == nil {
+		if err = TryAnySliceContext(ctx, slice.Interface(), v.Interface(), tags...); err == nil {
 			return slice.Elem().Interface(), nil
 		}
 	case reflect.Map:
@@ -102,7 +118,7 @@ func ReflectTryToType(v reflect.Value, t reflect.Type, recursive bool, tags ...s
 		return v.Interface(), nil
 	case reflect.Ptr:
 		var vl any
-		if vl, err = ReflectTryToType(v, t.Elem(), true, tags...); err == nil {
+		if vl, err = ReflectTryToTypeContext(ctx, v, t.Elem(), true, tags...); err == nil {
 			if reflect.Ptr != t.Elem().Kind() {
 				return vl, nil
 			}
@@ -113,7 +129,7 @@ func ReflectTryToType(v reflect.Value, t reflect.Type, recursive bool, tags ...s
 		}
 	case reflect.Struct:
 		st := reflect.New(t).Interface()
-		if err = TryCopyStruct(st, v.Interface(), tags...); err == nil {
+		if err = TryCopyStructContext(ctx, st, v.Interface(), tags...); err == nil {
 			return st, nil
 		}
 	default:
@@ -128,15 +144,25 @@ func ReflectTryToType(v reflect.Value, t reflect.Type, recursive bool, tags ...s
 
 // ReflectToType converts reflection valut to reflection type or returns nil
 func ReflectToType(v reflect.Value, t reflect.Type, tags ...string) any {
-	val, _ := ReflectTryToType(v, t, true, tags...)
+	return ReflectToTypeContext(context.Background(), v, t, tags...)
+}
+
+// ReflectToType converts reflection valut to reflection type or returns nil
+func ReflectToTypeContext(ctx context.Context, v reflect.Value, t reflect.Type, tags ...string) any {
+	val, _ := ReflectTryToTypeContext(ctx, v, t, true, tags...)
 	return val
 }
 
 // TryCastValue source type into the target type
 func TryCastValue[R any, T any](v T, recursive bool, tags ...string) (R, error) {
+	return TryCastValueContext[R](context.Background(), v, recursive, tags...)
+}
+
+// TryCastValueContext source type into the target type
+func TryCastValueContext[R any, T any](ctx context.Context, v T, recursive bool, tags ...string) (R, error) {
 	var (
 		rVal     R
-		val, err = TryTo(v, rVal, tags...)
+		val, err = TryToContext(ctx, v, rVal, tags...)
 	)
 	if err != nil {
 		return rVal, err
@@ -151,22 +177,42 @@ func TryCastValue[R any, T any](v T, recursive bool, tags ...string) (R, error) 
 
 // TryCastRecursive source type into the target type with recursive data converting
 func TryCastRecursive[R any, T any](v T, tags ...string) (R, error) {
-	return TryCastValue[R](v, true, tags...)
+	return TryCastRecursiveContext[R](context.Background(), v, tags...)
+}
+
+// TryCastRecursiveContext source type into the target type with recursive data converting
+func TryCastRecursiveContext[R any, T any](ctx context.Context, v T, tags ...string) (R, error) {
+	return TryCastValueContext[R](ctx, v, true, tags...)
 }
 
 // TryCast source type into the target type
 func TryCast[R any, T any](v T, tags ...string) (R, error) {
+	return TryCastContext[R](context.Background(), v, tags...)
+}
+
+// TryCastContext source type into the target type
+func TryCastContext[R any, T any](ctx context.Context, v T, tags ...string) (R, error) {
 	return TryCastValue[R](v, false, tags...)
 }
 
 // Cast source type into the target type
 func Cast[R any, T any](v T, tags ...string) R {
-	val, _ := TryCast[R](v, tags...)
+	return CastContext[R](context.Background(), v, tags...)
+}
+
+// CastContext source type into the target type
+func CastContext[R any, T any](ctx context.Context, v T, tags ...string) R {
+	val, _ := TryCastContext[R](ctx, v, tags...)
 	return val
 }
 
 // CastRecursive source type into the target type
 func CastRecursive[R any, T any](v T, tags ...string) R {
-	val, _ := TryCastRecursive[R](v, tags...)
+	return CastRecursiveContext[R](context.Background(), v, tags...)
+}
+
+// CastRecursiveContext source type into the target type
+func CastRecursiveContext[R any, T any](ctx context.Context, v T, tags ...string) R {
+	val, _ := TryCastRecursiveContext[R](ctx, v, tags...)
 	return val
 }

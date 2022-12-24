@@ -20,11 +20,17 @@
 package gocast
 
 import (
+	"context"
 	"reflect"
 )
 
 // TrySlice converts one type of array to other or resturns error
 func TrySlice[R any, S any](src []S, tags ...string) (res []R, err error) {
+	return TrySliceContext[R](context.Background(), src, tags...)
+}
+
+// TrySliceContext converts one type of array to other or resturns error
+func TrySliceContext[R any, S any](ctx context.Context, src []S, tags ...string) (res []R, err error) {
 	res = make([]R, len(src))
 	switch srcArr := any(src).(type) {
 	case []R:
@@ -32,7 +38,7 @@ func TrySlice[R any, S any](src []S, tags ...string) (res []R, err error) {
 	default:
 		for i, v := range src {
 			var newVal R
-			if newVal, err = TryCast[R](v); err != nil {
+			if newVal, err = TryCastContext[R](ctx, v); err != nil {
 				return nil, err
 			} else {
 				res[i] = newVal
@@ -44,7 +50,12 @@ func TrySlice[R any, S any](src []S, tags ...string) (res []R, err error) {
 
 // Slice converts one type of array to other or resturns nil if not compatible
 func Slice[R any, S any](src []S, tags ...string) []R {
-	res, _ := TrySlice[R](src, tags...)
+	return SliceContext[R](context.Background(), src, tags...)
+}
+
+// SliceContext converts one type of array to other or resturns nil if not compatible
+func SliceContext[R any, S any](ctx context.Context, src []S, tags ...string) []R {
+	res, _ := TrySliceContext[R](ctx, src, tags...)
 	return res
 }
 
@@ -82,7 +93,7 @@ func ToStringSlice(v any) []string {
 				result = make([]string, length)
 			}
 		}, func(v any, i int) {
-			result[i] = ToString(v)
+			result[i] = Str(v)
 		})
 		return result
 	}
@@ -102,7 +113,7 @@ func ToIntSlice(v any) []int {
 				result = make([]int, length)
 			}
 		}, func(v any, i int) {
-			result[i] = ToInt(v)
+			result[i] = Int(v)
 		})
 		return result
 	}
@@ -122,7 +133,7 @@ func ToFloat64Slice(v any) []float64 {
 				result = make([]float64, length)
 			}
 		}, func(v any, i int) {
-			result[i] = ToFloat64(v)
+			result[i] = Float64(v)
 		})
 		return result
 	}
@@ -132,6 +143,11 @@ func ToFloat64Slice(v any) []float64 {
 //
 // Deprecated: Use Slice[type](v) or TrySlice[type](v) instead
 func ToSlice(dst, src any, tags ...string) error {
+	return TryAnySliceContext(context.Background(), dst, src, tags...)
+}
+
+// TryAnySliceContext converts any input slice into destination type slice
+func TryAnySliceContext(ctx context.Context, dst, src any, tags ...string) error {
 	if dst == nil || src == nil {
 		return ErrInvalidParams
 	}
@@ -157,7 +173,7 @@ func ToSlice(dst, src any, tags ...string) error {
 
 	for i := 0; i < srcSlice.Len(); i++ {
 		it := srcSlice.Index(i)
-		if v, err := ReflectTryToType(it, dstElemType, true, tags...); err == nil {
+		if v, err := ReflectTryToTypeContext(ctx, it, dstElemType, true, tags...); err == nil {
 			val := reflect.ValueOf(v)
 			if dstElemType.Kind() != val.Kind() {
 				val = val.Elem()

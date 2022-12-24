@@ -1,10 +1,25 @@
 package gocast
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+type testSliceStruct struct {
+	ID   int
+	Text string
+}
+
+type testSliceCastStruct struct {
+	Text string
+}
+
+func (it *testSliceCastStruct) CastSet(ctx context.Context, v any) error {
+	it.Text = Str(v)
+	return nil
+}
 
 func TestToSlice(t *testing.T) {
 	type customVal string
@@ -19,7 +34,47 @@ func TestToSlice(t *testing.T) {
 			cfn: func(v any) any { return ToStringSlice(v) },
 		},
 		{
+			src: []int8{1, 2, 3, 4},
+			trg: []string{"1", "2", "3", "4"},
+			cfn: func(v any) any { return ToStringSlice(v) },
+		},
+		{
+			src: []int16{1, 2, 3, 4},
+			trg: []string{"1", "2", "3", "4"},
+			cfn: func(v any) any { return ToStringSlice(v) },
+		},
+		{
 			src: []int32{1, 2, 3, 4},
+			trg: []string{"1", "2", "3", "4"},
+			cfn: func(v any) any { return ToStringSlice(v) },
+		},
+		{
+			src: []int64{1, 2, 3, 4},
+			trg: []string{"1", "2", "3", "4"},
+			cfn: func(v any) any { return ToStringSlice(v) },
+		},
+		{
+			src: []uint{1, 2, 3, 4},
+			trg: []string{"1", "2", "3", "4"},
+			cfn: func(v any) any { return ToStringSlice(v) },
+		},
+		{
+			src: []uint8{1, 2, 3, 4},
+			trg: []string{"1", "2", "3", "4"},
+			cfn: func(v any) any { return ToStringSlice(v) },
+		},
+		{
+			src: []uint16{1, 2, 3, 4},
+			trg: []string{"1", "2", "3", "4"},
+			cfn: func(v any) any { return ToStringSlice(v) },
+		},
+		{
+			src: []uint32{1, 2, 3, 4},
+			trg: []string{"1", "2", "3", "4"},
+			cfn: func(v any) any { return ToStringSlice(v) },
+		},
+		{
+			src: []uint64{1, 2, 3, 4},
 			trg: []string{"1", "2", "3", "4"},
 			cfn: func(v any) any { return ToStringSlice(v) },
 		},
@@ -85,10 +140,17 @@ func TestToSlice(t *testing.T) {
 		{
 			src: []any{"1", "2.5", 6, 1.2, "999.5", true},
 			trg: []int{1, 2, 6, 1, 999, 1},
-			cfn: func(v any) any {
-				arr := Slice[int](v.([]any))
-				return arr
-			},
+			cfn: func(v any) any { return Slice[int](v.([]any)) },
+		},
+		{
+			src: []map[any]any{{"ID": 1, "Text": "text1"}, {"ID": 2, "Text": "text1"}},
+			trg: []testSliceStruct{{ID: 1, Text: "text1"}, {ID: 2, Text: "text1"}},
+			cfn: func(v any) any { return Slice[testSliceStruct](v.([]map[any]any)) },
+		},
+		{
+			src: []any{"text1", "text2"},
+			trg: []testSliceCastStruct{{Text: "text1"}, {Text: "text2"}},
+			cfn: func(v any) any { return Slice[testSliceCastStruct](v.([]any)) },
 		},
 	}
 	for _, test := range tests {
