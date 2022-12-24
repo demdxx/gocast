@@ -86,7 +86,7 @@ func TryCopyStructContext(ctx context.Context, dst, src any, tags ...string) (er
 						}
 					default:
 						var vl any
-						if vl, err = TryToType(v, f.Type(), tags...); err == nil {
+						if vl, err = TryToTypeContext(ctx, v, f.Type(), tags...); err == nil {
 							val := reflect.ValueOf(vl)
 							if val.Kind() == reflect.Ptr && val.Kind() != f.Kind() {
 								val = val.Elem()

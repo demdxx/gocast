@@ -21,21 +21,23 @@ func (c *customInt) CastSet(ctx context.Context, v any) error {
 }
 
 type testStruct struct {
-	Name        string    `field:"name"`
-	Value       int64     `field:"value"`
-	Count       customInt `field:"count"`
-	AnyTarget   any       `field:"anytarget"`
-	NilVal      any       `field:"nilval"`
-	ignore      bool      `field:"ignore"`
-	CreatedAt   time.Time `field:"created_at"`
-	UpdatedAt   time.Time `field:"updated_at"`
-	PublishedAt time.Time `field:"published_at"`
+	Name        string      `field:"name"`
+	Value       int64       `field:"value"`
+	Count       customInt   `field:"count"`
+	Counts      []customInt `field:"counts"`
+	AnyTarget   any         `field:"anytarget"`
+	NilVal      any         `field:"nilval"`
+	ignore      bool        `field:"ignore"`
+	CreatedAt   time.Time   `field:"created_at"`
+	UpdatedAt   time.Time   `field:"updated_at"`
+	PublishedAt time.Time   `field:"published_at"`
 }
 
 var testStructPreparedValue = map[string]any{
 	"Name":        "test",
 	"Value":       "1900",
 	"Count":       112.2,
+	"Counts":      []any{"1.1", 2.1},
 	"CreatedAt":   "2020/10/10",
 	"UpdatedAt":   time.Now().Unix(),
 	"PublishedAt": time.Now(),
@@ -47,6 +49,7 @@ func testPreparedStruct(t *testing.T, it *testStruct) {
 	assert.Equal(t, "test", it.Name)
 	assert.Equal(t, int64(1900), it.Value)
 	assert.Equal(t, customInt(112), it.Count)
+	assert.ElementsMatch(t, []customInt{1, 2}, it.Counts)
 	assert.Equal(t, 2020, it.CreatedAt.Year())
 	assert.Equal(t, time.Now().Year(), it.UpdatedAt.Year())
 	assert.Equal(t, time.Now().Year(), it.PublishedAt.Year())
@@ -148,11 +151,11 @@ func TestStructCastNested(t *testing.T) {
 func TestStructFields(t *testing.T) {
 	fields := StructFields(testStruct{}, "-")
 	assert.ElementsMatch(t,
-		[]string{"Name", "Value", "Count", "CreatedAt", "UpdatedAt",
+		[]string{"Name", "Value", "Count", "Counts", "CreatedAt", "UpdatedAt",
 			"PublishedAt", "AnyTarget", "NilVal", "ignore"}, fields)
 	fields = StructFields(testStruct{}, "")
 	assert.ElementsMatch(t,
-		[]string{"name", "value", "count", "created_at", "updated_at",
+		[]string{"name", "value", "count", "counts", "created_at", "updated_at",
 			"published_at", "anytarget", "nilval", "ignore"}, fields)
 }
 
@@ -162,6 +165,7 @@ func TestStructFieldTags(t *testing.T) {
 		map[string]string{
 			"AnyTarget":   "anytarget",
 			"Count":       "count",
+			"Counts":      "counts",
 			"Name":        "name",
 			"NilVal":      "nilval",
 			"CreatedAt":   "created_at",

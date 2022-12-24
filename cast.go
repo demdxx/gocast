@@ -53,8 +53,7 @@ func TryToTypeContext(ctx context.Context, v any, t reflect.Type, tags ...string
 	if v == nil || t == nil {
 		return nil, ErrInvalidParams
 	}
-	vl, err := ReflectTryToTypeContext(ctx, reflect.ValueOf(v), t, true, tags...)
-	return vl, err
+	return ReflectTryToTypeContext(ctx, reflect.ValueOf(v), t, true, tags...)
 }
 
 // ToType cast any input type into the target reflection

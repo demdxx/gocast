@@ -178,7 +178,21 @@ func TryAnySliceContext(ctx context.Context, dst, src any, tags ...string) error
 			if dstElemType.Kind() != val.Kind() {
 				val = val.Elem()
 			}
-			dstSlice.Index(i).Set(val)
+			item := dstSlice.Index(i)
+			if setter, _ := item.Interface().(CastSetter); setter != nil {
+				if err = setter.CastSet(ctx, val.Interface()); err != nil {
+					return err
+				}
+				continue
+			} else if item.CanAddr() {
+				if setter, _ := item.Addr().Interface().(CastSetter); setter != nil {
+					if err = setter.CastSet(ctx, val.Interface()); err != nil {
+						return err
+					}
+					continue
+				}
+			}
+			item.Set(val)
 		} else {
 			return err
 		}
