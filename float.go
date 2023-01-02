@@ -35,7 +35,7 @@ func ReflectToFloat64(v reflect.Value) float64 {
 			return 1.
 		}
 		return 0.
-	case reflect.Slice:
+	case reflect.Slice, reflect.Array:
 		switch v.Type().Elem().Kind() {
 		case reflect.Uint8:
 			str := string(v.Interface().([]byte))

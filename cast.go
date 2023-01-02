@@ -103,7 +103,7 @@ func ReflectTryToTypeContext(ctx context.Context, v reflect.Value, t reflect.Typ
 		return Number[float32](v.Interface()), nil
 	case reflect.Float64:
 		return Number[float64](v.Interface()), nil
-	case reflect.Slice:
+	case reflect.Slice, reflect.Array:
 		slice := reflect.New(t)
 		if err = TryAnySliceContext(ctx, slice.Interface(), v.Interface(), tags...); err == nil {
 			return slice.Elem().Interface(), nil

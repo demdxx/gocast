@@ -42,7 +42,7 @@ func ReflectToInt64(v reflect.Value) int64 {
 			return 1
 		}
 		return 0
-	case reflect.Slice:
+	case reflect.Slice, reflect.Array:
 		switch v.Type().Elem().Kind() {
 		case reflect.Uint8:
 			var val int64
@@ -111,7 +111,7 @@ func ToUint64ByReflect(v reflect.Value) uint64 {
 			return 1
 		}
 		return 0
-	case reflect.Slice:
+	case reflect.Slice, reflect.Array:
 		switch v.Type().Elem().Kind() {
 		case reflect.Uint8:
 			var val uint64

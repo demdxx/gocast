@@ -33,7 +33,7 @@ func TryReflectStr(v reflect.Value) (string, error) {
 	switch v.Kind() {
 	case reflect.String:
 		return v.String(), nil
-	case reflect.Slice:
+	case reflect.Slice, reflect.Array:
 		if v.Type().Elem().Kind() == reflect.Uint8 {
 			return string(v.Bytes()), nil
 		}

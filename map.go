@@ -303,7 +303,7 @@ func reflectMapValueByStringKeys(src reflect.Value, keys []string) any {
 func mapDestValue(fl any, destType reflect.Type, recursive bool, tags ...string) (any, error) {
 	field := reflect.ValueOf(fl)
 	switch field.Kind() {
-	case reflect.Slice:
+	case reflect.Slice, reflect.Array:
 		if field.Len() > 0 {
 			switch field.Index(0).Kind() {
 			case reflect.Map, reflect.Struct:
