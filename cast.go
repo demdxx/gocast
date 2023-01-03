@@ -31,10 +31,10 @@ func TryTo(v, to any, tags ...string) (any, error) {
 
 // TryToContext cast any input type into the target
 func TryToContext(ctx context.Context, v, to any, tags ...string) (any, error) {
-	if v == nil || to == nil {
+	if v == nil {
 		return nil, ErrInvalidParams
 	}
-	return TryToType(v, reflect.TypeOf(to), tags...)
+	return TryToTypeContext(ctx, v, reflect.TypeOf(to), tags...)
 }
 
 // TryTo cast any input type into the target
@@ -50,10 +50,17 @@ func TryToType(v any, t reflect.Type, tags ...string) (any, error) {
 
 // TryToTypeContext cast any input type into the target reflection
 func TryToTypeContext(ctx context.Context, v any, t reflect.Type, tags ...string) (any, error) {
-	if v == nil || t == nil {
+	if v == nil {
 		return nil, ErrInvalidParams
 	}
-	return ReflectTryToTypeContext(ctx, reflect.ValueOf(v), t, true, tags...)
+	val := reflect.ValueOf(v)
+	if t == nil { // In case of type is ANY make a copy of data
+		if k := val.Kind(); k == reflect.Struct || k == reflect.Map || k == reflect.Slice || k == reflect.Array {
+			return ReflectTryToTypeContext(ctx, val, val.Type(), true, tags...)
+		}
+		return v, nil
+	}
+	return ReflectTryToTypeContext(ctx, val, t, true, tags...)
 }
 
 // ToType cast any input type into the target reflection
@@ -70,8 +77,13 @@ func ReflectTryToType(v reflect.Value, t reflect.Type, recursive bool, tags ...s
 // ReflectTryToTypeContext converts reflection value to reflection type or returns error
 func ReflectTryToTypeContext(ctx context.Context, v reflect.Value, t reflect.Type, recursive bool, tags ...string) (any, error) {
 	v = reflectTarget(v)
-	if v.Type() == t && !v.CanAddr() {
-		return v.Interface(), nil
+	if v.Type() == t {
+		if k := t.Kind(); k != reflect.Struct &&
+			k != reflect.Map &&
+			k != reflect.Array && k != reflect.Slice &&
+			k != reflect.Interface && k != reflect.Pointer {
+			return v.Interface(), nil
+		}
 	}
 	var err error
 	switch t.Kind() {
@@ -110,26 +122,28 @@ func ReflectTryToTypeContext(ctx context.Context, v reflect.Value, t reflect.Typ
 		}
 	case reflect.Map:
 		mp := reflect.MakeMap(t).Interface()
-		if err = ToMap(mp, v.Interface(), recursive, tags...); err == nil {
+		if err = ToMapContext(ctx, mp, v.Interface(), recursive, tags...); err == nil {
 			return mp, nil
 		}
 	case reflect.Interface:
 		return v.Interface(), nil
-	case reflect.Ptr:
-		var vl any
-		if vl, err = ReflectTryToTypeContext(ctx, v, t.Elem(), true, tags...); err == nil {
-			if reflect.Ptr != t.Elem().Kind() {
-				return vl, nil
+	case reflect.Pointer:
+		var (
+			vl    any
+			tElem = t.Elem()
+		)
+		if tElem.Kind() == reflect.Struct {
+			newVal := reflect.New(tElem)
+			if err = TryCopyStructContext(ctx, newVal.Interface(), v.Interface(), tags...); err == nil {
+				return newVal.Interface(), nil
 			}
-			vlPtr := reflect.Zero(t)
-			val := reflect.ValueOf(vl)
-			vlPtr.Set(val)
-			return vlPtr.Interface(), nil
+		} else if vl, err = ReflectTryToTypeContext(ctx, v, tElem, true, tags...); err == nil {
+			return reflect.ValueOf(vl).Addr().Interface(), nil
 		}
 	case reflect.Struct:
-		st := reflect.New(t).Interface()
-		if err = TryCopyStructContext(ctx, st, v.Interface(), tags...); err == nil {
-			return st, nil
+		newVal := reflect.New(t)
+		if err = TryCopyStructContext(ctx, newVal.Interface(), v.Interface(), tags...); err == nil {
+			return newVal.Elem().Interface(), nil
 		}
 	default:
 		if v.Type() == t {
@@ -191,7 +205,7 @@ func TryCast[R any, T any](v T, tags ...string) (R, error) {
 
 // TryCastContext source type into the target type
 func TryCastContext[R any, T any](ctx context.Context, v T, tags ...string) (R, error) {
-	return TryCastValue[R](v, false, tags...)
+	return TryCastValueContext[R](ctx, v, false, tags...)
 }
 
 // Cast source type into the target type

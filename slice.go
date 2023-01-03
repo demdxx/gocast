@@ -153,12 +153,12 @@ func TryAnySliceContext(ctx context.Context, dst, src any, tags ...string) error
 	}
 
 	dstSlice := reflectTarget(reflect.ValueOf(dst))
-	if dstSlice.Kind() != reflect.Slice && dstSlice.Kind() != reflect.Array {
+	if k := dstSlice.Kind(); k != reflect.Slice && k != reflect.Array {
 		return ErrInvalidParams
 	}
 
 	srcSlice := reflectTarget(reflect.ValueOf(src))
-	if srcSlice.Kind() != reflect.Slice && srcSlice.Kind() != reflect.Array {
+	if k := srcSlice.Kind(); k != reflect.Slice && k != reflect.Array {
 		return ErrInvalidParams
 	}
 

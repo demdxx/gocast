@@ -29,6 +29,7 @@ func TestToFloat(t *testing.T) {
 		{src: []byte("125"), target: 125},
 		{src: true, target: 1},
 		{src: false, target: 0},
+		{src: []int{100}, target: 0},
 	}
 
 	for _, test := range tests {
@@ -77,6 +78,7 @@ func TestToFloat64ByReflect(t *testing.T) {
 		{src: []byte("125"), target: 125},
 		{src: true, target: 1},
 		{src: false, target: 0},
+		{src: []int{100}, target: 0},
 	}
 
 	for _, test := range tests {

@@ -34,15 +34,15 @@ type testStruct struct {
 }
 
 var testStructPreparedValue = map[string]any{
-	"Name":        "test",
-	"Value":       "1900",
-	"Count":       112.2,
-	"Counts":      []any{"1.1", 2.1},
-	"CreatedAt":   "2020/10/10",
-	"UpdatedAt":   time.Now().Unix(),
-	"PublishedAt": time.Now(),
-	"AnyTarget":   "hi",
-	"NilVal":      nil,
+	"name":         "test",
+	"value":        "1900",
+	"count":        112.2,
+	"counts":       []any{"1.1", 2.1},
+	"created_at":   "2020/10/10",
+	"updated_at":   time.Now().Unix(),
+	"published_at": time.Now(),
+	"anytarget":    "hi",
+	"nilval":       nil,
 }
 
 func testPreparedStruct(t *testing.T, it *testStruct) {
@@ -104,34 +104,37 @@ func TestStructGetSetFieldValue(t *testing.T) {
 }
 
 func TestStructCast(t *testing.T) {
-	res, err := Struct[testStruct](testStructPreparedValue)
+	res, err := Struct[testStruct](testStructPreparedValue, `field`)
 	assert.NoError(t, err)
 	testPreparedStruct(t, &res)
 }
 
 func TestStructCastNested(t *testing.T) {
-	testStructPrepared, err := Struct[testStruct](testStructPreparedValue)
+	testStructPrepared, err := Struct[testStruct](testStructPreparedValue, `field`)
 	assert.NoError(t, err)
 	testPreparedStruct(t, &testStructPrepared)
 
 	type testStruct2 struct {
-		Sub      testStruct
-		SubMap   map[string]*testStruct
-		SubSlice []*testStruct
+		Sub      testStruct             `field:"sub"`
+		SubMap   map[string]*testStruct `field:"submap"`
+		SubSlice []*testStruct          `field:"subslice"`
 	}
-	res, err := Struct[testStruct2](map[string]any{
-		"Sub": testStructPreparedValue,
-		"SubMap": map[string]any{
+
+	data := map[string]any{
+		"sub": testStructPreparedValue,
+		"submap": map[string]any{
 			"a": testStructPreparedValue,
 			"b": testStructPreparedValue,
 			"c": &testStructPrepared,
 		},
-		"SubSlice": []any{
+		"subslice": []any{
 			testStructPreparedValue,
 			testStructPreparedValue,
 			&testStructPrepared,
 		},
-	})
+	}
+
+	res, err := Struct[testStruct2](data, "field")
 	assert.NoError(t, err)
 	testPreparedStruct(t, &res.Sub)
 	assert.Equal(t, 3, len(res.SubMap))

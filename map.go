@@ -20,11 +20,17 @@
 package gocast
 
 import (
+	"context"
 	"reflect"
 )
 
 // TryMapCopy converts source into destination or return error
 func TryMapCopy[K comparable, V any](dst map[K]V, src any, recursive bool, tags ...string) error {
+	return TryMapCopyContext(context.Background(), dst, src, recursive, tags...)
+}
+
+// TryMapCopyContext converts source into destination or return error
+func TryMapCopyContext[K comparable, V any](ctx context.Context, dst map[K]V, src any, recursive bool, tags ...string) error {
 	if dst == nil || src == nil {
 		return ErrInvalidParams
 	}
@@ -39,9 +45,9 @@ func TryMapCopy[K comparable, V any](dst map[K]V, src any, recursive bool, tags 
 			key, err := TryCast[K](k.Interface())
 			if err == nil {
 				if recursive {
-					dst[key], err = TryCastRecursive[V](field.Interface(), tags...)
+					dst[key], err = TryCastRecursiveContext[V](ctx, field.Interface(), tags...)
 				} else {
-					dst[key], err = TryCast[V](field.Interface(), tags...)
+					dst[key], err = TryCastContext[V](ctx, field.Interface(), tags...)
 				}
 			}
 			if err != nil {
@@ -60,9 +66,9 @@ func TryMapCopy[K comparable, V any](dst map[K]V, src any, recursive bool, tags 
 				fl := getValue(field.Interface())
 				if !omitempty || !IsEmpty(fl) {
 					if recursive {
-						dst[key], err = TryCastRecursive[V](fl, tags...)
+						dst[key], err = TryCastRecursiveContext[V](ctx, fl, tags...)
 					} else {
-						dst[key], err = TryCast[V](fl, tags...)
+						dst[key], err = TryCastContext[V](ctx, fl, tags...)
 					}
 					if err != nil {
 						return err
@@ -79,6 +85,12 @@ func TryMapCopy[K comparable, V any](dst map[K]V, src any, recursive bool, tags 
 // ToMap cast your Source into the Destination type
 // tag defines the tags name in the structure to map the keys
 func ToMap(dst, src any, recursive bool, tags ...string) error {
+	return ToMapContext(context.Background(), dst, src, recursive, tags...)
+}
+
+// ToMap cast your Source into the Destination type
+// tag defines the tags name in the structure to map the keys
+func ToMapContext(ctx context.Context, dst, src any, recursive bool, tags ...string) error {
 	if dst == nil || src == nil {
 		return ErrInvalidParams
 	}
@@ -133,59 +145,9 @@ func ToMap(dst, src any, recursive bool, tags ...string) error {
 			err = wrapError(ErrUnsupportedSourceType, srcType.String())
 		}
 	case map[string]any:
-		switch srcType.Kind() {
-		case reflect.Map:
-			for _, k := range srcVal.MapKeys() {
-				field := srcVal.MapIndex(k)
-				if recursive {
-					dest[Str(k.Interface())], err = mapDestValue(field.Interface(), destType, recursive, tags...)
-					if err != nil {
-						return err
-					}
-				} else {
-					dest[Str(k.Interface())] = field.Interface()
-				}
-			}
-		case reflect.Struct:
-			for i := 0; i < srcVal.NumField(); i++ {
-				name, omitempty := fieldNameFromTags(srcType.Field(i), tags...)
-				if len(name) > 0 {
-					field := srcVal.Field(i)
-					fl := getValue(field.Interface())
-					if !omitempty || !IsEmpty(fl) {
-						if recursive {
-							dest[name], err = mapDestValue(fl, destType, recursive, tags...)
-							if err != nil {
-								return err
-							}
-						} else {
-							dest[name] = fl
-						}
-					} // end if !omitempty || !IsEmpty(fl)
-				}
-			}
-		default:
-			err = wrapError(ErrUnsupportedSourceType, srcType.String())
-		}
+		err = TryMapCopyContext(ctx, dest, src, recursive, tags...)
 	case map[string]string:
-		switch srcType.Kind() {
-		case reflect.Map:
-			for _, k := range srcVal.MapKeys() {
-				dest[Str(k.Interface())] = Str(srcVal.MapIndex(k).Interface())
-			}
-		case reflect.Struct:
-			for i := 0; i < srcVal.NumField(); i++ {
-				name, omitempty := fieldNameFromTags(srcType.Field(i), tags...)
-				if len(name) > 0 {
-					fl := getValue(srcVal.Field(i).Interface())
-					if !omitempty || !IsEmpty(fl) {
-						dest[name] = Str(fl)
-					}
-				} // end if
-			}
-		default:
-			err = wrapError(ErrUnsupportedSourceType, srcType.String())
-		}
+		err = TryMapCopyContext(ctx, dest, src, recursive, tags...)
 	default:
 		switch destType.Kind() {
 		case reflect.Map, reflect.Struct:
@@ -194,12 +156,12 @@ func ToMap(dst, src any, recursive bool, tags ...string) error {
 			switch srcType.Kind() {
 			case reflect.Map:
 				for _, k := range srcVal.MapKeys() {
-					keyVal, err := ReflectTryToType(k, keyType, false)
+					keyVal, err := ReflectTryToTypeContext(ctx, k, keyType, recursive, tags...)
 					if err != nil {
 						return wrapError(err, Str(k.Interface()))
 					}
 					mapVal := reflectTarget(srcVal.MapIndex(k))
-					val, err := ReflectTryToType(mapVal, elemType, false)
+					val, err := ReflectTryToTypeContext(ctx, mapVal, elemType, recursive, tags...)
 					if err != nil {
 						return wrapError(err, "`"+Str(k.Interface())+"` value")
 					}
@@ -216,7 +178,7 @@ func ToMap(dst, src any, recursive bool, tags ...string) error {
 							if err != nil {
 								return wrapError(err, name)
 							}
-							val, err := ReflectTryToType(flVal, elemType, false)
+							val, err := ReflectTryToTypeContext(ctx, flVal, elemType, recursive, tags...)
 							if err != nil {
 								return wrapError(err, "`"+name+"` value")
 							}
@@ -236,8 +198,13 @@ func ToMap(dst, src any, recursive bool, tags ...string) error {
 
 // TryMapFrom source creates new map to convert
 func TryMapFrom[K comparable, V any](src any, recursive bool, tags ...string) (map[K]V, error) {
+	return TryMapFromContext[K, V](context.Background(), src, recursive, tags...)
+}
+
+// TryMapFrom source creates new map to convert
+func TryMapFromContext[K comparable, V any](ctx context.Context, src any, recursive bool, tags ...string) (map[K]V, error) {
 	dst := make(map[K]V)
-	err := TryMapCopy(dst, src, recursive, tags...)
+	err := TryMapCopyContext(ctx, dst, src, recursive, tags...)
 	return dst, err
 }
 
@@ -246,9 +213,19 @@ func TryMapRecursive[K comparable, V any](src any, tags ...string) (map[K]V, err
 	return TryMapFrom[K, V](src, true, tags...)
 }
 
+// TryMapRecursiveContext creates new map to convert from soruce type with recursive field processing
+func TryMapRecursiveContext[K comparable, V any](ctx context.Context, src any, tags ...string) (map[K]V, error) {
+	return TryMapFromContext[K, V](ctx, src, true, tags...)
+}
+
 // TryMap creates new map to convert from soruce type
 func TryMap[K comparable, V any](src any, tags ...string) (map[K]V, error) {
 	return TryMapFrom[K, V](src, false, tags...)
+}
+
+// TryMapContext creates new map to convert from soruce type
+func TryMapContext[K comparable, V any](ctx context.Context, src any, tags ...string) (map[K]V, error) {
+	return TryMapFromContext[K, V](ctx, src, false, tags...)
 }
 
 // MapRecursive creates map from source or returns nil
@@ -257,9 +234,21 @@ func MapRecursive[K comparable, V any](src any, tags ...string) map[K]V {
 	return m
 }
 
+// MapRecursiveContext creates map from source or returns nil
+func MapRecursiveContext[K comparable, V any](ctx context.Context, src any, tags ...string) map[K]V {
+	m, _ := TryMapRecursiveContext[K, V](ctx, src, tags...)
+	return m
+}
+
 // Map creates map from source or returns nil
 func Map[K comparable, V any](src any, tags ...string) map[K]V {
 	m, _ := TryMap[K, V](src, tags...)
+	return m
+}
+
+// MapContext creates map from source or returns nil
+func MapContext[K comparable, V any](ctx context.Context, src any, tags ...string) map[K]V {
+	m, _ := TryMapContext[K, V](ctx, src, tags...)
 	return m
 }
 

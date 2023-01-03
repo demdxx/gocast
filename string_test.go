@@ -25,8 +25,10 @@ var stringTypecastTests = []struct {
 	{value: 1.1, target: "1.1"},
 	{value: float32(1.5), target: "1.5"},
 	{value: true, target: "true"},
+	{value: false, target: "false"},
 	{value: []byte(`byte`), target: "byte"},
 	{value: `str`, target: "str"},
+	{value: nil, target: ""},
 }
 
 func TestToStringByReflect(t *testing.T) {
