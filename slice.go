@@ -174,25 +174,21 @@ func TryAnySliceContext(ctx context.Context, dst, src any, tags ...string) error
 	for i := 0; i < srcSlice.Len(); i++ {
 		it := srcSlice.Index(i)
 		if v, err := ReflectTryToTypeContext(ctx, it, dstElemType, true, tags...); err == nil {
-			val := reflect.ValueOf(v)
-			if dstElemType.Kind() != val.Kind() {
-				val = val.Elem()
-			}
 			item := dstSlice.Index(i)
 			if setter, _ := item.Interface().(CastSetter); setter != nil {
-				if err = setter.CastSet(ctx, val.Interface()); err != nil {
+				if err = setter.CastSet(ctx, v); err != nil {
 					return err
 				}
 				continue
 			} else if item.CanAddr() {
 				if setter, _ := item.Addr().Interface().(CastSetter); setter != nil {
-					if err = setter.CastSet(ctx, val.Interface()); err != nil {
+					if err = setter.CastSet(ctx, v); err != nil {
 						return err
 					}
 					continue
 				}
 			}
-			item.Set(val)
+			item.Set(reflect.ValueOf(v))
 		} else {
 			return err
 		}
