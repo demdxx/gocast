@@ -172,23 +172,27 @@ func TryAnySliceContext(ctx context.Context, dst, src any, tags ...string) error
 	}
 
 	for i := 0; i < srcSlice.Len(); i++ {
-		it := srcSlice.Index(i)
-		if v, err := ReflectTryToTypeContext(ctx, it, dstElemType, true, tags...); err == nil {
-			item := dstSlice.Index(i)
-			if setter, _ := item.Interface().(CastSetter); setter != nil {
-				if err = setter.CastSet(ctx, v); err != nil {
+		srcItem := srcSlice.Index(i)
+		dstItem := dstSlice.Index(i)
+		if setter, _ := dstItem.Interface().(CastSetter); setter != nil {
+			if dstItem.Kind() == reflect.Pointer && dstItem.IsNil() {
+				dstItem.Set(reflect.New(dstItem.Type().Elem()))
+				setter, _ = dstItem.Interface().(CastSetter)
+			}
+			if err := setter.CastSet(ctx, srcItem.Interface()); err != nil {
+				return err
+			}
+			continue
+		} else if dstItem.CanAddr() {
+			if setter, _ := dstItem.Addr().Interface().(CastSetter); setter != nil {
+				if err := setter.CastSet(ctx, srcItem.Interface()); err != nil {
 					return err
 				}
 				continue
-			} else if item.CanAddr() {
-				if setter, _ := item.Addr().Interface().(CastSetter); setter != nil {
-					if err = setter.CastSet(ctx, v); err != nil {
-						return err
-					}
-					continue
-				}
 			}
-			item.Set(reflect.ValueOf(v))
+		}
+		if v, err := ReflectTryToTypeContext(ctx, srcItem, dstElemType, true, tags...); err == nil {
+			dstItem.Set(reflect.ValueOf(v))
 		} else {
 			return err
 		}
