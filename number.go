@@ -1,8 +1,11 @@
 package gocast
 
 import (
+	"reflect"
+	"regexp"
 	"strconv"
-	"strings"
+
+	///"strings"
 
 	"golang.org/x/exp/constraints"
 )
@@ -11,6 +14,20 @@ import (
 type Numeric interface {
 	constraints.Integer | constraints.Float
 }
+
+// /added by simon for parse_string_to_number 2023.1.27
+var reg_compare_float_str = regexp.MustCompile(`\.|e|E`)
+
+func parse_string_to_number[R Numeric](str string) (R, error) {
+	if reg_compare_float_str.MatchString(str) {
+		rval, err := strconv.ParseFloat(str, 64)
+		return R(rval), err
+	}
+	rval, err := strconv.ParseInt(str, 10, 64)
+	return R(rval), err
+}
+
+///end of added.
 
 // TryNumber converts from types which could be numbers
 func TryNumber[R Numeric](v any) (R, error) {
@@ -22,22 +39,15 @@ func TryNumber[R Numeric](v any) (R, error) {
 	case *R:
 		return *v, nil
 	}
+
 	switch v := v.(type) {
 	case string:
-		if strings.Contains(v, ".") {
-			rval, err := strconv.ParseFloat(v, 64)
-			return R(rval), err
-		}
-		rval, err := strconv.ParseInt(v, 10, 64)
-		return R(rval), err
+		///replaced by simon 2023.1.27
+		return parse_string_to_number[R](v)
 	case []byte:
 		s := string(v)
-		if strings.Contains(s, ".") {
-			rval, err := strconv.ParseFloat(s, 64)
-			return R(rval), err
-		}
-		rval, err := strconv.ParseInt(s, 10, 64)
-		return R(rval), err
+		///replaced by simon 2023.1.27
+		return parse_string_to_number[R](s)
 	case bool:
 		if v {
 			return 1, nil
@@ -69,6 +79,25 @@ func TryNumber[R Numeric](v any) (R, error) {
 		return R(v), nil
 	case float64:
 		return R(v), nil
+	///added by simon for ~int,~string etc. 2023.1.27
+	default:
+		r_value := reflect.ValueOf(v)
+		r_value = reflectTarget(r_value)
+		switch r_value.Kind() {
+		case reflect.String:
+			str := r_value.String()
+			return parse_string_to_number[R](str)
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			value := r_value.Int()
+			return R(value), nil
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+			value := r_value.Uint()
+			return R(value), nil
+		case reflect.Float32, reflect.Float64:
+			value := r_value.Float()
+			return R(value), nil
+		}
+		///end of added.
 	}
 	return R(0), ErrUnsupportedNumericType
 }

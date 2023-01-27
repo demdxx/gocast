@@ -13,15 +13,24 @@ func TestCast(t *testing.T) {
 		A int    `json:"a"`
 		B bool   `json:"b"`
 	}
+	type TestInt int
+	type TestUintptr uintptr
+	type TestString string
+
 	var (
-		tests = []any{
+		string_tests = []any{
 			int(100), int8(100), int16(100), int32(100), int64(100),
 			uint(100), uint8(100), uint16(100), uint32(100), uint64(100),
 			uintptr(100), float32(100.), float64(100.),
 			"100", []byte("100"), &[]int32{100}[0],
+			TestInt(100), TestUintptr(100), TestString("100"),
 		}
+
+		tests = []any{"1e02", "1.0e+2", "100.00", "0.1E+3"}
+
 		testStruct = testStructType{S: "test", A: 1, B: true}
 	)
+	tests = append(tests, string_tests...)
 
 	t.Run("simple", func(t *testing.T) {
 		assert.Equal(t, 1, Cast[int](true))
@@ -42,6 +51,7 @@ func TestCast(t *testing.T) {
 		for _, v := range tests {
 			assert.Equal(t, 100, Cast[int](v))
 			assert.Equal(t, 100, CastRecursive[int](v))
+			assert.Equal(t, 100, Number[int](v))
 		}
 	})
 
@@ -54,8 +64,16 @@ func TestCast(t *testing.T) {
 		}
 	})
 
+	t.Run("cast TestInt", func(t *testing.T) {
+		data := TestInt(100)
+		assert.Equal(t, float32(100), Cast[float32](data))
+		assert.Equal(t, TestInt(100), Number[TestInt](100))
+		//the following code will panic
+		//assert.Equal(t, TestInt(100), Cast[TestInt](100))
+	})
+
 	t.Run("string", func(t *testing.T) {
-		for _, v := range tests {
+		for _, v := range string_tests {
 			assert.Equal(t, "100", strings.TrimSuffix(Cast[string](v), ".0"))
 			assert.Equal(t, "100", strings.TrimSuffix(CastRecursive[string](v), ".0"))
 		}
@@ -69,4 +87,5 @@ func TestCast(t *testing.T) {
 			assert.Equal(t, testStruct, newStruct)
 		}
 	})
+
 }
