@@ -30,11 +30,12 @@ func ReflectToInt64(v reflect.Value) int64 {
 	switch v.Kind() {
 	case reflect.String:
 		var val int64
-		if strings.Contains(v.String(), ".") {
-			fval, _ := strconv.ParseFloat(v.String(), 64)
+		var strVal = v.String()
+		if strings.Contains(strVal, ".") || strings.Contains(strVal, "e") || strings.Contains(strVal, "E") {
+			fval, _ := strconv.ParseFloat(strVal, 64)
 			val = int64(fval)
 		} else {
-			val, _ = strconv.ParseInt(v.String(), 10, 64)
+			val, _ = strconv.ParseInt(strVal, 10, 64)
 		}
 		return val
 	case reflect.Bool:
@@ -47,7 +48,7 @@ func ReflectToInt64(v reflect.Value) int64 {
 		case reflect.Uint8:
 			var val int64
 			str := string(v.Interface().([]byte))
-			if strings.Contains(str, ".") {
+			if strings.Contains(str, ".") || strings.Contains(str, "e") || strings.Contains(str, "E") {
 				fval, _ := strconv.ParseFloat(str, 64)
 				val = int64(fval)
 			} else {
@@ -116,7 +117,7 @@ func ToUint64ByReflect(v reflect.Value) uint64 {
 		case reflect.Uint8:
 			var val uint64
 			str := string(v.Interface().([]byte))
-			if strings.Contains(str, ".") {
+			if strings.Contains(str, ".") || strings.Contains(str, "e") || strings.Contains(str, "E") {
 				fval, _ := strconv.ParseFloat(str, 64)
 				val = uint64(fval)
 			} else {

@@ -1,7 +1,7 @@
 GoCast
 ======
 [![GoDoc](https://godoc.org/github.com/demdxx/gocast?status.svg)](https://godoc.org/github.com/demdxx/gocast)
-[![Build Status](https://github.com/demdxx/gocast/workflows/run%20tests/badge.svg)](https://github.com/demdxx/gocast/actions?workflow=run%20tests)
+[![Build Status](https://github.com/demdxx/gocast/workflows/Tests/badge.svg)](https://github.com/demdxx/gocast/actions?workflow=Tests)
 [![Go Report Card](https://goreportcard.com/badge/github.com/demdxx/gocast)](https://goreportcard.com/report/github.com/demdxx/gocast)
 [![Coverage Status](https://coveralls.io/repos/github/demdxx/gocast/badge.svg?branch=master)](https://coveralls.io/github/demdxx/gocast?branch=master)
 

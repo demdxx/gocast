@@ -1,3 +1,5 @@
+name: Tests
+
 on:
   push:
     tags:
@@ -10,7 +12,6 @@ on:
       - master
       - main
 
-name: run tests
 jobs:
   lint:
     runs-on: ubuntu-latest

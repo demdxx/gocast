@@ -24,7 +24,7 @@ func TryNumber[R Numeric](v any) (R, error) {
 	}
 	switch v := v.(type) {
 	case string:
-		if strings.Contains(v, ".") {
+		if strings.Contains(v, ".") || strings.Contains(v, "e") || strings.Contains(v, "E") {
 			rval, err := strconv.ParseFloat(v, 64)
 			return R(rval), err
 		}
@@ -32,7 +32,7 @@ func TryNumber[R Numeric](v any) (R, error) {
 		return R(rval), err
 	case []byte:
 		s := string(v)
-		if strings.Contains(s, ".") {
+		if strings.Contains(s, ".") || strings.Contains(s, "e") || strings.Contains(s, "E") {
 			rval, err := strconv.ParseFloat(s, 64)
 			return R(rval), err
 		}

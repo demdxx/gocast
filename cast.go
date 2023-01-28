@@ -88,33 +88,33 @@ func ReflectTryToTypeContext(ctx context.Context, v reflect.Value, t reflect.Typ
 	var err error
 	switch t.Kind() {
 	case reflect.String:
-		return Str(v.Interface()), nil
+		return TryStr(v.Interface())
 	case reflect.Bool:
 		return Bool(v.Interface()), nil
 	case reflect.Int:
-		return Number[int](v.Interface()), nil
+		return TryNumber[int](v.Interface())
 	case reflect.Int8:
-		return Number[int8](v.Interface()), nil
+		return TryNumber[int8](v.Interface())
 	case reflect.Int16:
-		return Number[int16](v.Interface()), nil
+		return TryNumber[int16](v.Interface())
 	case reflect.Int32:
-		return Number[int32](v.Interface()), nil
+		return TryNumber[int32](v.Interface())
 	case reflect.Int64:
-		return Number[int64](v.Interface()), nil
+		return TryNumber[int64](v.Interface())
 	case reflect.Uint:
-		return Number[uint](v.Interface()), nil
+		return TryNumber[uint](v.Interface())
 	case reflect.Uint8:
-		return Number[uint8](v.Interface()), nil
+		return TryNumber[uint8](v.Interface())
 	case reflect.Uint16:
-		return Number[uint16](v.Interface()), nil
+		return TryNumber[uint16](v.Interface())
 	case reflect.Uint32:
-		return Number[uint32](v.Interface()), nil
+		return TryNumber[uint32](v.Interface())
 	case reflect.Uint64:
-		return Number[uint64](v.Interface()), nil
+		return TryNumber[uint64](v.Interface())
 	case reflect.Float32:
-		return Number[float32](v.Interface()), nil
+		return TryNumber[float32](v.Interface())
 	case reflect.Float64:
-		return Number[float64](v.Interface()), nil
+		return TryNumber[float64](v.Interface())
 	case reflect.Slice, reflect.Array:
 		slice := reflect.New(t)
 		if err = TryAnySliceContext(ctx, slice.Interface(), v.Interface(), tags...); err == nil {
