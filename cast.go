@@ -21,6 +21,7 @@ package gocast
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 )
 
@@ -75,8 +76,8 @@ func ReflectTryToType(v reflect.Value, t reflect.Type, recursive bool, tags ...s
 }
 
 // ReflectTryToTypeContext converts reflection value to reflection type or returns error
-func ReflectTryToTypeContext(ctx context.Context, v reflect.Value, t reflect.Type, recursive bool, tags ...string) (any, error) {
-	v = reflectTarget(v)
+func ReflectTryToTypeContext(ctx context.Context, srcVal reflect.Value, t reflect.Type, recursive bool, tags ...string) (any, error) {
+	v := reflectTarget(srcVal)
 	if v.Type() == t {
 		if k := t.Kind(); k != reflect.Struct &&
 			k != reflect.Map &&
@@ -88,6 +89,9 @@ func ReflectTryToTypeContext(ctx context.Context, v reflect.Value, t reflect.Typ
 	var err error
 	switch t.Kind() {
 	case reflect.String:
+		if stringer, _ := srcVal.Interface().(fmt.Stringer); stringer != nil {
+			return stringer.String(), nil
+		}
 		return TryStr(v.Interface())
 	case reflect.Bool:
 		return Bool(v.Interface()), nil

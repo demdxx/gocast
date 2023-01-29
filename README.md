@@ -1,5 +1,5 @@
-GoCast
-======
+# GoCast
+
 [![GoDoc](https://godoc.org/github.com/demdxx/gocast?status.svg)](https://godoc.org/github.com/demdxx/gocast)
 [![Build Status](https://github.com/demdxx/gocast/workflows/Tests/badge.svg)](https://github.com/demdxx/gocast/actions?workflow=Tests)
 [![Go Report Card](https://goreportcard.com/badge/github.com/demdxx/gocast)](https://goreportcard.com/report/github.com/demdxx/gocast)
@@ -84,6 +84,37 @@ fmt.Printf("User: %d - %s", id, email)
 // > User: 19 - iamawesome@mail.com
 ```
 
+### Custom types
+
+In many cases necessary to have control over the process of assigning a value to a variable.
+
+```go
+// Define custom type
+type Money int64
+
+func (m *Money) CastSet(ctx context.Context, v any) error {
+  switch val := v.(type) {
+  case Money:
+    *m = val
+  default:
+    *m = Money(gocast.Float64(v) * 1000000)
+  }
+  return nil
+}
+
+// Use custom type in structs
+type Car struct {
+  ID int64
+  Price Money
+}
+
+var car Car
+
+// Mapping values into struct
+// Expecting: Money.CastSet(ctx, "12000.00")
+gocast.TryCopyStruct(&car, map[string]any{"ID":1, "Price": "12000.00"})
+```
+
 ## Benchmarks
 
 ```sh
@@ -125,8 +156,7 @@ PASS
 ok      github.com/demdxx/gocast/v2     18.977s
 ```
 
-License
-=======
+## License
 
 The MIT License (MIT)
 

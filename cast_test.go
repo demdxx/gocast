@@ -34,6 +34,7 @@ func TestCast(t *testing.T) {
 		assert.Equal(t, uint16(100), Cast[uint16]("100"))
 		assert.Equal(t, uint32(100), Cast[uint32]("100"))
 		assert.Equal(t, uint64(100), Cast[uint64]("100"))
+		assert.Equal(t, uint64(100), Cast[uint64](&[]int32{100}[0]))
 		assert.Equal(t, true, Cast[bool](100))
 		assert.Equal(t, testStructType{}, ToType(testStructType{}, nil))
 	})
