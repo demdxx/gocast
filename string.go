@@ -111,7 +111,7 @@ func TryStr(v any) (string, error) {
 	case float64:
 		return strconv.FormatFloat(val, 'G', -1, 64), nil
 	case reflect.Value:
-		return TryReflectToString(reflectTarget(val))
+		return TryReflectStr(reflectTarget(val))
 	}
 	val := reflectTarget(reflect.ValueOf(v))
 	return fmt.Sprintf("%v", val.Interface()), nil

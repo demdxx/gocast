@@ -158,3 +158,11 @@ func TestToSlice(t *testing.T) {
 		assert.ElementsMatch(t, test.trg, res)
 	}
 }
+
+func TestIsSlice(t *testing.T) {
+	assert.True(t, IsSlice([]int{}))
+	assert.True(t, IsSlice([]bool{}))
+	assert.True(t, IsSlice([]testSliceCastStruct{}))
+	assert.True(t, IsSlice(([]any)(nil)))
+	assert.False(t, IsSlice("not a slice"))
+}

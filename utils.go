@@ -79,7 +79,7 @@ func IsEmptyByReflection(v reflect.Value) bool {
 	case reflect.Interface:
 		return v.IsNil()
 	case reflect.Bool:
-		return v.Bool()
+		return !v.Bool()
 	case reflect.Slice, reflect.Array, reflect.Map, reflect.String:
 		return v.Len() == 0
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:

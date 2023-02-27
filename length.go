@@ -5,6 +5,10 @@ import "reflect"
 // Len returns size of slice, array or map
 func Len[T any](val T) int {
 	switch s := any(val).(type) {
+	case string:
+		return len(s)
+	case []byte:
+		return len(s)
 	case []any:
 		return len(s)
 	case []string:

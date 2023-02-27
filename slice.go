@@ -201,6 +201,22 @@ func TryAnySliceContext(ctx context.Context, dst, src any, tags ...string) error
 	return nil
 }
 
+// IsSlice returns true if v is a slice or array
+func IsSlice(v any) bool {
+	switch v.(type) {
+	// Check default types first for performance
+	case []any, []string, []bool,
+		[]int, []int16, []int32, []int64,
+		[]uint, []uint16, []uint32, []uint64,
+		[]float32, []float64:
+		return true
+	default:
+		refValue := reflect.ValueOf(v)
+		kind := refValue.Kind()
+		return kind == reflect.Slice || kind == reflect.Array
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /// Helpers
 ///////////////////////////////////////////////////////////////////////////////

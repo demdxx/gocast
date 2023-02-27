@@ -1,8 +1,11 @@
 package gocast
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
-func TestIsEmpty(t *testing.T) {
+func TestEmpty(t *testing.T) {
 	var tests = []struct {
 		src    any
 		target bool
@@ -45,11 +48,20 @@ func TestIsEmpty(t *testing.T) {
 		{src: []bool{}, target: true},
 	}
 
-	for _, test := range tests {
-		if v := IsEmpty(test.src); v != test.target {
-			t.Errorf("target must be equal %v != %v", test.src, test.target)
+	t.Run("IsEmpty", func(t *testing.T) {
+		for _, test := range tests {
+			if v := IsEmpty(test.src); v != test.target {
+				t.Errorf("target must be equal %v != %v", test.src, test.target)
+			}
 		}
-	}
+	})
+	t.Run("IsEmptyByReflection", func(t *testing.T) {
+		for _, test := range tests {
+			if v := IsEmptyByReflection(reflect.ValueOf(test.src)); v != test.target {
+				t.Errorf("target must be equal %v != %v", test.src, test.target)
+			}
+		}
+	})
 }
 
 func BenchmarkIsEmpty(b *testing.B) {
