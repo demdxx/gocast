@@ -273,6 +273,16 @@ func ToStringMap(src any, recursive bool, tags ...string) (map[string]string, er
 	return TryMapFrom[string, string](src, recursive, tags...)
 }
 
+// IsMap checks if the input value is a Map/Object type
+func IsMap(v any) bool {
+	switch v.(type) {
+	case map[any]any, map[string]any, map[string]string, map[string]int, map[int]int:
+		return true
+	default:
+		return reflect.ValueOf(v).Kind() == reflect.Map
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /// MARK: Helpers
 ///////////////////////////////////////////////////////////////////////////////

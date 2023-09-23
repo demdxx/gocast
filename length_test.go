@@ -15,7 +15,7 @@ func TestLen(t *testing.T) {
 	assert.Equal(t, 4, Len([]float64{1, 2, 3, 4}))
 	assert.Equal(t, 4, Len(&[]float64{1, 2, 3, 4}))
 	assert.Equal(t, 3, Len([]byte("123")))
-	assert.Equal(t, 0, Len(([]int)(nil)))
+	assert.Equal(t, 0, Len([]int(nil)))
 
 	assert.Equal(t, 0, Len((map[string]any)(nil)))
 	assert.Equal(t, 1, Len(map[string]any{"a": 1}))

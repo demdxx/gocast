@@ -61,7 +61,7 @@ func SliceContext[R any, S any](ctx context.Context, src []S, tags ...string) []
 
 // ToInterfaceSlice converts any input slice into Interface type slice
 //
-// Deprecated: Use Slice[any](v) instead
+// Deprecated: Use Slice[any](v) or AnySlice[any](v) instead
 func ToInterfaceSlice(v any) []any {
 	switch sv := v.(type) {
 	case []any:
@@ -81,7 +81,7 @@ func ToInterfaceSlice(v any) []any {
 
 // ToStringSlice converts any input slice into String type slice
 //
-// Deprecated: Use Slice[string](v) instead
+// Deprecated: Use Slice[string](v) or AnySlice[string](v) instead
 func ToStringSlice(v any) []string {
 	switch sv := v.(type) {
 	case []string:
@@ -101,7 +101,7 @@ func ToStringSlice(v any) []string {
 
 // ToIntSlice converts any input slice into Int type slice
 //
-// Deprecated: Use Slice[int](v) instead
+// Deprecated: Use Slice[int](v) or AnySlice[int](v) instead
 func ToIntSlice(v any) []int {
 	switch sv := v.(type) {
 	case []int:
@@ -121,7 +121,7 @@ func ToIntSlice(v any) []int {
 
 // ToFloat64Slice converts any input slice into Float64 type slice
 //
-// Deprecated: Use Slice[float64](v) instead
+// Deprecated: Use Slice[float64](v) or AnySlice[float64](v) instead
 func ToFloat64Slice(v any) []float64 {
 	switch sv := v.(type) {
 	case []float64:
@@ -141,13 +141,37 @@ func ToFloat64Slice(v any) []float64 {
 
 // ToSlice converts any input slice into destination type slice
 //
-// Deprecated: Use Slice[type](v) or TrySlice[type](v) instead
+// Deprecated: Use Slice[type](v) or TrySlice[type](v) or AnySlice[type](v) or TryAnySlice[type](v) instead
 func ToSlice(dst, src any, tags ...string) error {
-	return TryAnySliceContext(context.Background(), dst, src, tags...)
+	return TryToAnySliceContext(context.Background(), dst, src, tags...)
 }
 
-// TryAnySliceContext converts any input slice into destination type slice
-func TryAnySliceContext(ctx context.Context, dst, src any, tags ...string) error {
+// TryToAnySlice converts any input slice into destination type slice as return value
+func TryAnySlice[R any](src any, tags ...string) (res []R, err error) {
+	return TryAnySliceContext[R](context.Background(), src, tags...)
+}
+
+// TryAnySliceContext converts any input slice into destination type slice as return value
+func TryAnySliceContext[R any](ctx context.Context, src any, tags ...string) ([]R, error) {
+	res := []R{}
+	err := TryToAnySliceContext(ctx, &res, src, tags...)
+	return res, err
+}
+
+// AnySlice converts any input slice into destination type slice as return value
+func AnySlice[R any](src any, tags ...string) []R {
+	return AnySliceContext[R](context.Background(), src, tags...)
+}
+
+// AnySliceContext converts any input slice into destination type slice as return value
+func AnySliceContext[R any](ctx context.Context, src any, tags ...string) []R {
+	res := []R{}
+	_ = TryToAnySliceContext(ctx, &res, src, tags...)
+	return res
+}
+
+// TryToAnySliceContext converts any input slice into destination type slice
+func TryToAnySliceContext(ctx context.Context, dst, src any, tags ...string) error {
 	if dst == nil || src == nil {
 		return ErrInvalidParams
 	}

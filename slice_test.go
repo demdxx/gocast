@@ -26,136 +26,157 @@ func TestToSlice(t *testing.T) {
 	tests := []struct {
 		src any
 		trg any
-		cfn func(v any) any
+		err error
+		cfn func(v any) (any, error)
 	}{
 		{
 			src: []int{1, 2, 3, 4},
 			trg: []string{"1", "2", "3", "4"},
-			cfn: func(v any) any { return ToStringSlice(v) },
+			cfn: func(v any) (any, error) { return ToStringSlice(v), nil },
 		},
 		{
 			src: []int8{1, 2, 3, 4},
 			trg: []string{"1", "2", "3", "4"},
-			cfn: func(v any) any { return ToStringSlice(v) },
+			cfn: func(v any) (any, error) { return ToStringSlice(v), nil },
 		},
 		{
 			src: []int16{1, 2, 3, 4},
 			trg: []string{"1", "2", "3", "4"},
-			cfn: func(v any) any { return ToStringSlice(v) },
+			cfn: func(v any) (any, error) { return ToStringSlice(v), nil },
 		},
 		{
 			src: []int32{1, 2, 3, 4},
 			trg: []string{"1", "2", "3", "4"},
-			cfn: func(v any) any { return ToStringSlice(v) },
+			cfn: func(v any) (any, error) { return ToStringSlice(v), nil },
 		},
 		{
 			src: []int64{1, 2, 3, 4},
 			trg: []string{"1", "2", "3", "4"},
-			cfn: func(v any) any { return ToStringSlice(v) },
+			cfn: func(v any) (any, error) { return ToStringSlice(v), nil },
 		},
 		{
 			src: []uint{1, 2, 3, 4},
 			trg: []string{"1", "2", "3", "4"},
-			cfn: func(v any) any { return ToStringSlice(v) },
+			cfn: func(v any) (any, error) { return ToStringSlice(v), nil },
 		},
 		{
 			src: []uint8{1, 2, 3, 4},
 			trg: []string{"1", "2", "3", "4"},
-			cfn: func(v any) any { return ToStringSlice(v) },
+			cfn: func(v any) (any, error) { return ToStringSlice(v), nil },
 		},
 		{
 			src: []uint16{1, 2, 3, 4},
 			trg: []string{"1", "2", "3", "4"},
-			cfn: func(v any) any { return ToStringSlice(v) },
+			cfn: func(v any) (any, error) { return ToStringSlice(v), nil },
 		},
 		{
 			src: []uint32{1, 2, 3, 4},
 			trg: []string{"1", "2", "3", "4"},
-			cfn: func(v any) any { return ToStringSlice(v) },
+			cfn: func(v any) (any, error) { return ToStringSlice(v), nil },
 		},
 		{
 			src: []uint64{1, 2, 3, 4},
 			trg: []string{"1", "2", "3", "4"},
-			cfn: func(v any) any { return ToStringSlice(v) },
+			cfn: func(v any) (any, error) { return ToStringSlice(v), nil },
 		},
 		{
 			src: []customVal{"1", "2", "3", "4"},
 			trg: []string{"1", "2", "3", "4"},
-			cfn: func(v any) any { return ToStringSlice(v) },
+			cfn: func(v any) (any, error) { return ToStringSlice(v), nil },
 		},
 		{
 			src: []any{"1", "2.5", 6, 1.2},
 			trg: []int{1, 2, 6, 1},
-			cfn: func(v any) any { return ToIntSlice(v) },
+			cfn: func(v any) (any, error) { return ToIntSlice(v), nil },
 		},
 		{
 			src: []float64{1, 2.5, 6, 1.2},
 			trg: []int{1, 2, 6, 1},
-			cfn: func(v any) any { return ToIntSlice(v) },
+			cfn: func(v any) (any, error) { return ToIntSlice(v), nil },
 		},
 		{
 			src: []float32{1, 2.5, 6, 1.2},
 			trg: []int{1, 2, 6, 1},
-			cfn: func(v any) any { return ToIntSlice(v) },
+			cfn: func(v any) (any, error) { return ToIntSlice(v), nil },
 		},
 		{
 			src: []bool{true, false},
 			trg: []int{1, 0},
-			cfn: func(v any) any { return ToIntSlice(v) },
+			cfn: func(v any) (any, error) { return ToIntSlice(v), nil },
 		},
 		{
 			src: []any{"1", "2.5", 6, 1.2},
 			trg: []any{"1", "2.5", 6, 1.2},
-			cfn: func(v any) any { return ToInterfaceSlice(v) },
+			cfn: func(v any) (any, error) { return ToInterfaceSlice(v), nil },
 		},
 		{
 			src: []int{1, 2, 3, 4},
 			trg: []any{1, 2, 3, 4},
-			cfn: func(v any) any { return ToInterfaceSlice(v) },
+			cfn: func(v any) (any, error) { return ToInterfaceSlice(v), nil },
 		},
 		{
 			src: []int64{1, 2, 3, 4},
 			trg: []any{int64(1), int64(2), int64(3), int64(4)},
-			cfn: func(v any) any { return ToInterfaceSlice(v) },
+			cfn: func(v any) (any, error) { return ToInterfaceSlice(v), nil },
 		},
 		{
 			src: []any{"1", "2.5", 6, 1.2, "999.5"},
 			trg: []float64{1, 2.5, 6, 1.2, 999.5},
-			cfn: func(v any) any { return ToFloat64Slice(v) },
+			cfn: func(v any) (any, error) { return ToFloat64Slice(v), nil },
 		},
 		{
 			src: []string{"1", "2.5", "6", "1.2", "999.5"},
 			trg: []float64{1, 2.5, 6, 1.2, 999.5},
-			cfn: func(v any) any { return ToFloat64Slice(v) },
+			cfn: func(v any) (any, error) { return ToFloat64Slice(v), nil },
 		},
 		{
 			src: []any{"1", "2.5", 6, 1.2, "999.5", true},
 			trg: []int{1, 2, 6, 1, 999, 1},
-			cfn: func(v any) any {
-				arr := []int{}
-				_ = ToSlice(&arr, v, "")
-				return arr
-			},
+			cfn: func(v any) (any, error) { arr := []int{}; err := ToSlice(&arr, v, ""); return arr, err },
 		},
 		{
 			src: []any{"1", "2.5", 6, 1.2, "999.5", true},
 			trg: []int{1, 2, 6, 1, 999, 1},
-			cfn: func(v any) any { return Slice[int](v.([]any)) },
+			cfn: func(v any) (any, error) { return AnySlice[int](v), nil },
+		},
+		{
+			src: []any{"1", "2.5", 6, 1.2, "999.5", true},
+			trg: []int{1, 2, 6, 1, 999, 1},
+			cfn: func(v any) (any, error) { return Slice[int](v.([]any)), nil },
 		},
 		{
 			src: []map[any]any{{"ID": 1, "Text": "text1"}, {"ID": 2, "Text": "text1"}},
 			trg: []testSliceStruct{{ID: 1, Text: "text1"}, {ID: 2, Text: "text1"}},
-			cfn: func(v any) any { return Slice[testSliceStruct](v.([]map[any]any)) },
+			cfn: func(v any) (any, error) { return Slice[testSliceStruct](v.([]map[any]any)), nil },
 		},
 		{
 			src: []any{"text1", "text2"},
 			trg: []testSliceCastStruct{{Text: "text1"}, {Text: "text2"}},
-			cfn: func(v any) any { return Slice[testSliceCastStruct](v.([]any)) },
+			cfn: func(v any) (any, error) { return Slice[testSliceCastStruct](v.([]any)), nil },
+		},
+		{
+			src: []any{"text1", "text2"},
+			trg: []any{"text1", "text2"},
+			cfn: func(v any) (any, error) { return Slice[any](v.([]any)), nil },
+		},
+		{
+			src: nil,
+			err: ErrInvalidParams,
+			cfn: func(v any) (any, error) { return TryAnySlice[int](v) },
+		},
+		{
+			src: 1,
+			err: ErrInvalidParams,
+			cfn: func(v any) (any, error) { return TryAnySlice[int](v) },
 		},
 	}
 	for _, test := range tests {
-		res := test.cfn(test.src)
-		assert.ElementsMatch(t, test.trg, res)
+		res, err := test.cfn(test.src)
+		if test.err != nil {
+			assert.EqualError(t, err, test.err.Error())
+		} else if assert.NoError(t, err) {
+			assert.ElementsMatch(t, test.trg, res)
+		}
 	}
 }
 
