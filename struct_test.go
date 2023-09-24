@@ -178,6 +178,11 @@ func TestStructFieldTags(t *testing.T) {
 			"ignore":      "ignore"}, fields)
 }
 
+func TestIsStruct(t *testing.T) {
+	assert.True(t, IsStruct(testStruct{}))
+	assert.False(t, IsStruct(1))
+}
+
 func BenchmarkGetSetFieldValue(b *testing.B) {
 	st := &struct{ Name string }{}
 	ctx := context.TODO()

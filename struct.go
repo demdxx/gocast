@@ -209,6 +209,11 @@ func SetStructFieldValue(ctx context.Context, st any, name string, value any) (e
 	return wrapError(ErrStructFieldNameUndefined, name)
 }
 
+// IsStruct returns true if the value is a struct
+func IsStruct(v any) bool {
+	return v != nil && reflect.TypeOf(v).Kind() == reflect.Struct
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /// MARK: Helpers
 ///////////////////////////////////////////////////////////////////////////////
