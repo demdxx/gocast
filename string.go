@@ -138,6 +138,15 @@ func TryToString(v any) (string, error) {
 	return TryStr(v)
 }
 
+// IsStr returns true if value is string
+func IsStr(v any) bool {
+	if v == nil {
+		return false
+	}
+	_, ok := v.(string)
+	return ok
+}
+
 // IsStrContainsOf returns true if input string contains only chars from subset
 func IsStrContainsOf(s, subset string) bool {
 	if len(s) == 0 {

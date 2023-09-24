@@ -43,6 +43,25 @@ func TestToString(t *testing.T) {
 	}
 }
 
+func TestIsStr(t *testing.T) {
+	tests := []struct {
+		value  any
+		target bool
+	}{
+		{value: 1, target: false},
+		{value: nil, target: false},
+		{value: int8(1), target: false},
+		{value: int16(1), target: false},
+		{value: []byte("notstr"), target: false},
+		{value: []int8{1, 2, 3, 4, 5}, target: false},
+		{value: []any{'1', '2', '3'}, target: false},
+		{value: "str", target: true},
+	}
+	for _, test := range tests {
+		assert.Equal(t, IsStr(test.value), test.target)
+	}
+}
+
 func BenchmarkToStringByReflect(b *testing.B) {
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
