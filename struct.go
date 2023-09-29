@@ -43,72 +43,78 @@ func TryCopyStructContext(ctx context.Context, dst, src any, tags ...string) (er
 		}
 	}
 
+	// Set time value in case of time.Time type as destination target
 	switch dst.(type) {
 	case time.Time, *time.Time:
-		err = setFieldTimeValue(reflect.ValueOf(dst), src)
-	default:
-		destVal := reflectTarget(reflect.ValueOf(dst))
-		destType := destVal.Type()
+		return setFieldTimeValue(reflect.ValueOf(dst), src)
+	}
 
-		srcVal := reflectTarget(reflect.ValueOf(src))
+	var (
+		destVal        = reflectTarget(reflect.ValueOf(dst))
+		destType       = destVal.Type()
+		destFieldTypes = ReflectStructFields(destType)
+		srcVal         = reflectTarget(reflect.ValueOf(src))
+		names          []string
+		v              any
+	)
 
-		switch srcVal.Kind() {
-		case reflect.Map, reflect.Struct:
-			for i := 0; i < destVal.NumField(); i++ {
-				f := destVal.Field(i)
-				if !f.CanSet() {
-					continue
+	// Check source type is map or struct, otherwise return error unsupported type
+	if srcVal.Kind() != reflect.Map && srcVal.Kind() != reflect.Struct {
+		return wrapError(ErrUnsupportedSourceType, destType.Name())
+	}
+
+	// Iterate over destination fields and set values from source
+	for _, ft := range destFieldTypes {
+		field := destVal.FieldByName(ft.Name)
+		if !field.CanSet() {
+			continue
+		}
+
+		// Get passable field names
+		if names = fieldNames(ft, tags...); len(names) < 1 {
+			continue
+		}
+
+		// Get value from map or struct
+		if srcVal.Kind() == reflect.Map {
+			v = reflectMapValueByStringKeys(srcVal, names)
+		} else {
+			v, _ = ReflectStructFieldValue(srcVal, names...)
+		}
+
+		// Set field value
+		if v == nil {
+			if err = setFieldValueReflect(ctx, field, reflect.Zero(field.Type())); err != nil {
+				break
+			}
+			continue
+		}
+
+		switch field.Kind() {
+		case reflect.Struct:
+			err = TryCopyStructContext(ctx, field.Addr().Interface(), v, tags...)
+		default:
+			var vl any
+			if vl, err = TryToTypeContext(ctx, v, field.Type(), tags...); err == nil {
+				val := reflect.ValueOf(vl)
+				if val.Kind() == reflect.Ptr && val.Kind() != field.Kind() {
+					val = val.Elem()
 				}
-
-				// Get passable field names
-				names := fieldNames(destType.Field(i), tags...)
-				if len(names) < 1 {
-					continue
-				}
-
-				// Get value from map
-				var v any
-
-				if srcVal.Kind() == reflect.Map {
-					v = reflectMapValueByStringKeys(srcVal, names)
-				} else {
-					v, _ = ReflectStructFieldValue(srcVal, names...)
-				}
-
-				// Set field value
-				if v == nil {
-					err = setFieldValueReflect(ctx, f, reflect.Zero(f.Type()))
-				} else {
-					switch f.Kind() {
-					case reflect.Struct:
-						if err = TryCopyStructContext(ctx, f.Addr().Interface(), v, tags...); err != nil {
-							return err
-						}
-					default:
-						var vl any
-						if vl, err = TryToTypeContext(ctx, v, f.Type(), tags...); err == nil {
-							val := reflect.ValueOf(vl)
-							if val.Kind() == reflect.Ptr && val.Kind() != f.Kind() {
-								val = val.Elem()
-							}
-							err = setFieldValueReflect(ctx, f, val)
-						} else if setter, _ := f.Interface().(CastSetter); setter != nil {
-							err = setter.CastSet(ctx, v)
-						} else if f.CanAddr() {
-							if setter, _ := f.Addr().Interface().(CastSetter); setter != nil {
-								err = setter.CastSet(ctx, v)
-							}
-						}
-					} // end switch
-				} // end else
-				if err != nil {
-					break
+				err = setFieldValueReflect(ctx, field, val)
+			} else if setter, _ := field.Interface().(CastSetter); setter != nil {
+				err = setter.CastSet(ctx, v)
+			} else if field.CanAddr() {
+				if setter, _ := field.Addr().Interface().(CastSetter); setter != nil {
+					err = setter.CastSet(ctx, v)
 				}
 			}
-		default:
-			err = wrapError(ErrUnsupportedType, destType.Name())
+		}
+
+		if err != nil {
+			break
 		}
 	}
+
 	return err
 }
 
@@ -131,16 +137,27 @@ func ToStruct(dst, src any, tags ...string) error {
 	return TryCopyStruct(dst, src, tags...)
 }
 
-// StructFields returns the field names from the structure
-func StructFields(st any, tag string) []string {
+// StructFieldNames returns the field names from the structure
+func StructFieldNames(st any, tag string) []string {
 	s := reflectTarget(reflect.ValueOf(st))
-	t := s.Type()
+	return ReflectStructFieldNames(s.Type(), tag)
+}
 
-	fields := make([]string, 0, s.NumField())
-	for i := 0; i < s.NumField(); i++ {
-		fname, _ := fieldName(t.Field(i), tag)
-		if fname != "" && fname != "-" {
-			fields = append(fields, fname)
+// ReflectStructFieldNames returns the field names from the structure
+func ReflectStructFieldNames(t reflect.Type, tag string) []string {
+	if t.Kind() != reflect.Struct {
+		return nil
+	}
+	fields := make([]string, 0, t.NumField())
+	for i := 0; i < t.NumField(); i++ {
+		tfield := t.Field(i)
+		if tfield.Anonymous && tfield.Type.Kind() == reflect.Struct {
+			fields = append(fields, ReflectStructFieldNames(tfield.Type, tag)...)
+		} else {
+			fname, _ := fieldName(tfield, tag)
+			if fname != "" && fname != "-" {
+				fields = append(fields, fname)
+			}
 		}
 	}
 	return fields
@@ -159,21 +176,52 @@ func StructFieldTags(st any, tag string) map[string]string {
 
 // StructFieldTagsUnsorted returns field names and tag targets separately
 func StructFieldTagsUnsorted(st any, tag string) ([]string, []string) {
-	keys := []string{}
-	values := []string{}
+	return ReflectStructFieldTagsUnsorted(reflectTarget(reflect.ValueOf(st)).Type(), tag)
+}
 
-	s := reflectTarget(reflect.ValueOf(st))
-	t := s.Type()
+// ReflectStructFieldTagsUnsorted returns field names and tag targets separately
+func ReflectStructFieldTagsUnsorted(t reflect.Type, tag string) ([]string, []string) {
+	if t.Kind() != reflect.Struct {
+		return nil, nil
+	}
 
-	for i := 0; i < s.NumField(); i++ {
+	var (
+		keys = make([]string, 0, t.NumField())
+		tags = make([]string, 0, t.NumField())
+	)
+
+	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
-		tag := fieldTag(f, tag)
-		if len(tag) > 0 && tag != "-" {
-			keys = append(keys, f.Name)
-			values = append(values, tag)
+		if f.Anonymous && f.Type.Kind() == reflect.Struct {
+			k, v := ReflectStructFieldTagsUnsorted(f.Type, tag)
+			keys = append(keys, k...)
+			tags = append(tags, v...)
+		} else {
+			tag := strings.TrimSuffix(fieldTag(f, tag), ",omitempty")
+			if len(tag) > 0 && tag != "-" {
+				keys = append(keys, f.Name)
+				tags = append(tags, tag)
+			}
 		}
 	}
-	return keys, values
+	return keys, tags
+}
+
+// ReflectStructFields returns the field names from the structure
+func ReflectStructFields(t reflect.Type) []reflect.StructField {
+	if t.Kind() != reflect.Struct {
+		return nil
+	}
+	fields := make([]reflect.StructField, 0, t.NumField())
+	for i := 0; i < t.NumField(); i++ {
+		tfield := t.Field(i)
+		if tfield.Anonymous && tfield.Type.Kind() == reflect.Struct {
+			fields = append(fields, ReflectStructFields(tfield.Type)...)
+		} else {
+			fields = append(fields, tfield)
+		}
+	}
+	return fields
 }
 
 // StructFieldValue returns the value of the struct field

@@ -5,33 +5,35 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/demdxx/gocast)](https://goreportcard.com/report/github.com/demdxx/gocast)
 [![Coverage Status](https://coveralls.io/repos/github/demdxx/gocast/badge.svg?branch=master)](https://coveralls.io/github/demdxx/gocast?branch=master)
 
-Easily convert basic types into any other basic types.
+## Introduction
 
-## What is GoCast?
+GoCast is a powerful Go library that allows you to easily convert between different basic types in a consistent and efficient way. Whether you need to convert strings, numbers, or other basic types, GoCast has got you covered.
 
-Cast is a library to convert between different GO types in a consistent and easy way.
+## Features
 
-The library provides a set of methods with the universal casting of types.
+- **Universal Type Casting**: GoCast provides a set of methods for universal type casting, making it easy to convert data between various types.
+- **Struct Field Manipulation**: GoCast allows you to set and retrieve values of struct fields dynamically, making it a valuable tool for working with complex data structures.
+- **Custom Type Support**: You can define custom types and implement your own conversion logic, giving you full control over how data is cast.
 
-**The new version** still support old conversion functions like *ToString*, *ToInt*, *ToMap* and etc.
-The new version uses insted just the name od the type *Str*, *Number[type]*, *Map[K,V]* and etc.
-Also was added new functions which returns the error apearing during type casting,
-all such functions starts from word *Try{Name}*. Like *TryStr*, *TryNumber[type]*, *TryMap[K,V]*, *TryCast[type]* and etc.
+## Installation
 
-## Usage example
+To use GoCast in your Go project, simply import it:
 
 ```go
 import "github.com/demdxx/gocast/v2"
+```
 
+## Usage Example
+
+Here are some examples of how you can use GoCast:
+
+```go
 // Example string casting:
 gocast.Str("strasstr")           // "strasstr"
 gocast.Str(8)                    // "8"
 gocast.Str(8.31)                 // "8.31"
 gocast.Str([]byte("one time"))   // "one time"
 gocast.Str(nil)                  // ""
-
-var foo any = "one more time"
-gocast.Str(foo)                  // "one more time"
 
 // Example number casting:
 gocast.Number[int](8)            // 8
@@ -66,7 +68,9 @@ func sumAll(vals ...any) int {
 }
 ```
 
-### Structures
+## Struct Field Manipulation
+
+GoCast also allows you to work with struct fields dynamically:
 
 ```go
 type User struct {
@@ -86,9 +90,9 @@ fmt.Printf("User: %d - %s", id, email)
 // > User: 19 - iamawesome@mail.com
 ```
 
-### Custom types
+## Custom Type Support
 
-In many cases necessary to have control over the process of assigning a value to a variable.
+You can define and use custom types with GoCast:
 
 ```go
 // Define custom type
@@ -113,11 +117,12 @@ type Car struct {
 var car Car
 
 // Mapping values into struct
-// Expecting: Money.CastSet(ctx, "12000.00")
 gocast.TryCopyStruct(&car, map[string]any{"ID":1, "Price": "12000.00"})
 ```
 
 ## Benchmarks
+
+Here are some benchmark results for GoCast:
 
 ```sh
 > go test -benchmem -v -race -bench=.
@@ -125,58 +130,38 @@ gocast.TryCopyStruct(&car, map[string]any{"ID":1, "Price": "12000.00"})
 goos: darwin
 goarch: amd64
 pkg: github.com/demdxx/gocast/v2
-cpu: VirtualApple @ 2.50GHz
 BenchmarkApproachTest
 BenchmarkApproachTest/bench1
-BenchmarkApproachTest/bench1-8    307263              3611 ns/op          0 B/op           0 allocs/op
+BenchmarkApproachTest/bench1-24           348097         3064 ns/op        0 B/op          0 allocs/op
 BenchmarkApproachTest/bench2
-BenchmarkApproachTest/bench2-8    337455              3546 ns/op          0 B/op           0 allocs/op
+BenchmarkApproachTest/bench2-24           394160         3005 ns/op        0 B/op          0 allocs/op
 BenchmarkBool
-BenchmarkBool-8                 16757396                75.54 ns/op       0 B/op           0 allocs/op
+BenchmarkBool-24                        20453542           58.87 ns/op             0 B/op          0 allocs/op
 BenchmarkToBoolByReflect
-BenchmarkToBoolByReflect-8      10259976               121.2 ns/op        0 B/op           0 allocs/op
+BenchmarkToBoolByReflect-24             17354990           70.62 ns/op             0 B/op          0 allocs/op
 BenchmarkToFloat
-BenchmarkToFloat-8               7107516               169.0 ns/op        2 B/op           0 allocs/op
+BenchmarkToFloat-24                     10951923          107.0 ns/op              0 B/op          0 allocs/op
 BenchmarkToInt
-BenchmarkToInt-8                 7212882               168.5 ns/op        2 B/op           0 allocs/op
+BenchmarkToInt-24                        9870794          121.1 ns/op              0 B/op          0 allocs/op
 BenchmarkToUint
-BenchmarkToUint-8                7202331               166.8 ns/op        2 B/op           0 allocs/op
+BenchmarkToUint-24                       9729873          121.3 ns/op              0 B/op          0 allocs/op
 BenchmarkToStringByReflect
-BenchmarkToStringByReflect-8      970101              1251 ns/op          6 B/op           0 allocs/op
+BenchmarkToStringByReflect-24             922710         1601 ns/op        5 B/op          0 allocs/op
 BenchmarkToString
-BenchmarkToString-8               995446              1166 ns/op          6 B/op           0 allocs/op
+BenchmarkToString-24                      836929         1622 ns/op        5 B/op          0 allocs/op
 BenchmarkGetSetFieldValue
 BenchmarkGetSetFieldValue/set
-BenchmarkGetSetFieldValue/set-8                  1468659               821.3 ns/op        32 B/op          2 allocs/op
+BenchmarkGetSetFieldValue/set-24         1000000         1021 ns/op       64 B/op          4 allocs/op
 BenchmarkGetSetFieldValue/get
-BenchmarkGetSetFieldValue/get-8                  1407585               851.8 ns/op        48 B/op          3 allocs/op
+BenchmarkGetSetFieldValue/get-24         1869465          643.8 ns/op             48 B/op          3 allocs/op
 BenchmarkParseTime
-BenchmarkParseTime-8                              504934              2258 ns/op         464 B/op          5 allocs/op
+BenchmarkParseTime-24                     374346         3130 ns/op      700 B/op         17 allocs/op
 BenchmarkIsEmpty
-BenchmarkIsEmpty-8                              26776375                54.08 ns/op        0 B/op          0 allocs/op
+BenchmarkIsEmpty-24                     37383031           31.23 ns/op             0 B/op          0 allocs/op
 PASS
-ok      github.com/demdxx/gocast/v2     18.977s
+ok      github.com/demdxx/gocast/v2     17.982s
 ```
 
 ## License
 
-The MIT License (MIT)
-
-Copyright (c) 2014 Dmitry Ponomarev <demdxx@gmail.com>
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+GoCast is released under the MIT License. See the [LICENSE](LICENSE) file for details.

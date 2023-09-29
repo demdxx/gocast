@@ -20,13 +20,19 @@ func (c *customInt) CastSet(ctx context.Context, v any) error {
 	return nil
 }
 
+type testStructParent struct {
+	ParentName string `field:"parent_name"`
+}
+
 type testStruct struct {
+	testStructParent
+
 	Name        string      `field:"name"`
 	Value       int64       `field:"value"`
 	Count       customInt   `field:"count"`
 	Counts      []customInt `field:"counts"`
 	AnyTarget   any         `field:"anytarget"`
-	NilVal      any         `field:"nilval"`
+	NilVal      any         `field:"nilval,omitempty"`
 	ignore      bool        `field:"ignore"`
 	CreatedAt   time.Time   `field:"created_at"`
 	UpdatedAt   time.Time   `field:"updated_at"`
@@ -34,6 +40,7 @@ type testStruct struct {
 }
 
 var testStructPreparedValue = map[string]any{
+	"parent_name":  "parent name",
 	"name":         "test",
 	"value":        "1900",
 	"count":        112.2,
@@ -69,6 +76,7 @@ func TestStructGetSetFieldValue(t *testing.T) {
 	assert.NoError(t, SetStructFieldValue(ctx, &st, "UpdatedAt", time.Now().Unix()), "set UpdatedAt field value")
 	assert.NoError(t, SetStructFieldValue(ctx, &st, "PublishedAt", time.Now()), "set PublishedAt field value")
 	assert.NoError(t, SetStructFieldValue(ctx, &st, "AnyTarget", "hi"), "set AnyTarget field value")
+	assert.NoError(t, SetStructFieldValue(ctx, &st, "ParentName", "parent name"), "set ParentName field value")
 	assert.Error(t, SetStructFieldValue(ctx, &st, "UndefinedField", int64(127)), "set UndefinedField field value must be error")
 
 	name, err := StructFieldValue(st, "Name")
@@ -98,6 +106,10 @@ func TestStructGetSetFieldValue(t *testing.T) {
 	anyTarget, err := StructFieldValue(st, "AnyTarget")
 	assert.NoError(t, err, "get AnyTarget value")
 	assert.Equal(t, "hi", anyTarget)
+
+	parentName, err := StructFieldValue(st, "ParentName")
+	assert.NoError(t, err, "get ParentName value")
+	assert.Equal(t, "parent name", parentName)
 
 	_, err = StructFieldValue(st, "UndefinedField")
 	assert.Error(t, err, "get UndefinedField value must be error")
@@ -134,38 +146,46 @@ func TestStructCastNested(t *testing.T) {
 		},
 	}
 
-	res, err := Struct[testStruct2](data, "field")
-	assert.NoError(t, err)
-	testPreparedStruct(t, &res.Sub)
-	assert.Equal(t, 3, len(res.SubMap))
-	for k, val := range res.SubMap {
-		t.Run("SubMap["+k+"]", func(t *testing.T) {
-			testPreparedStruct(t, val)
-		})
-	}
-	assert.Equal(t, 3, len(res.SubSlice))
-	for i, val := range res.SubSlice {
-		t.Run("SubSlice["+Str(i)+"]", func(t *testing.T) {
-			testPreparedStruct(t, val)
-		})
-	}
+	t.Run("cast", func(t *testing.T) {
+		res, err := Struct[testStruct2](data, "field")
+		assert.NoError(t, err)
+		testPreparedStruct(t, &res.Sub)
+		assert.Equal(t, 3, len(res.SubMap))
+		for k, val := range res.SubMap {
+			t.Run("SubMap["+k+"]", func(t *testing.T) {
+				testPreparedStruct(t, val)
+			})
+		}
+		assert.Equal(t, 3, len(res.SubSlice))
+		for i, val := range res.SubSlice {
+			t.Run("SubSlice["+Str(i)+"]", func(t *testing.T) {
+				testPreparedStruct(t, val)
+			})
+		}
+	})
+
+	t.Run("error", func(t *testing.T) {
+		_, err := Struct[testStruct2](1, "field")
+		assert.ErrorIs(t, err, ErrUnsupportedSourceType)
+	})
 }
 
-func TestStructFields(t *testing.T) {
-	fields := StructFields(testStruct{}, "-")
+func TestStructFieldNames(t *testing.T) {
+	fields := StructFieldNames(testStruct{}, "-")
 	assert.ElementsMatch(t,
 		[]string{"Name", "Value", "Count", "Counts", "CreatedAt", "UpdatedAt",
-			"PublishedAt", "AnyTarget", "NilVal", "ignore"}, fields)
-	fields = StructFields(testStruct{}, "")
+			"PublishedAt", "AnyTarget", "NilVal", "ignore", "ParentName"}, fields)
+	fields = StructFieldNames(testStruct{}, "")
 	assert.ElementsMatch(t,
 		[]string{"name", "value", "count", "counts", "created_at", "updated_at",
-			"published_at", "anytarget", "nilval", "ignore"}, fields)
+			"published_at", "anytarget", "nilval", "ignore", "parent_name"}, fields)
 }
 
 func TestStructFieldTags(t *testing.T) {
 	fields := StructFieldTags(testStruct{}, "field")
 	assert.Equal(t,
 		map[string]string{
+			"ParentName":  "parent_name",
 			"AnyTarget":   "anytarget",
 			"Count":       "count",
 			"Counts":      "counts",
