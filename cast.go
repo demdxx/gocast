@@ -27,13 +27,16 @@ import (
 
 // TryTo cast any input type into the target
 func TryTo(v, to any, tags ...string) (any, error) {
-	return TryToContext(context.Background(), v, reflect.TypeOf(to), tags...)
+	return TryToContext(context.Background(), v, to, tags...)
 }
 
 // TryToContext cast any input type into the target
 func TryToContext(ctx context.Context, v, to any, tags ...string) (any, error) {
 	if v == nil {
-		return nil, ErrInvalidParams
+		if vl := reflect.ValueOf(v); !vl.IsValid() || vl.IsNil() {
+			return nil, nil
+		}
+		return nil, wrapError(ErrInvalidParams, `TryToContext: "v" is nil`)
 	}
 	return TryToTypeContext(ctx, v, reflect.TypeOf(to), tags...)
 }
@@ -52,7 +55,10 @@ func TryToType(v any, t reflect.Type, tags ...string) (any, error) {
 // TryToTypeContext cast any input type into the target reflection
 func TryToTypeContext(ctx context.Context, v any, t reflect.Type, tags ...string) (any, error) {
 	if v == nil {
-		return nil, ErrInvalidParams
+		if vl := reflect.ValueOf(v); !vl.IsValid() || vl.IsNil() {
+			return nil, nil
+		}
+		return nil, wrapError(ErrInvalidParams, `TryToTypeContext: "v" is nil`)
 	}
 	val := reflect.ValueOf(v)
 	if t == nil { // In case of type is ANY make a copy of data
@@ -78,6 +84,14 @@ func ReflectTryToType(v reflect.Value, t reflect.Type, recursive bool, tags ...s
 // ReflectTryToTypeContext converts reflection value to reflection type or returns error
 func ReflectTryToTypeContext(ctx context.Context, srcVal reflect.Value, t reflect.Type, recursive bool, tags ...string) (any, error) {
 	v := reflectTarget(srcVal)
+	if !v.IsValid() {
+		switch t.Kind() {
+		case reflect.Ptr, reflect.Interface, reflect.Map, reflect.Slice, reflect.Array, reflect.Chan, reflect.Func:
+			return nil, nil
+		default:
+			return nil, wrapError(ErrInvalidParams, "ReflectTryToTypeContext: `srcVal` is invalid")
+		}
+	}
 	if v.Type() == t {
 		if k := t.Kind(); k != reflect.Struct &&
 			k != reflect.Map &&
@@ -187,6 +201,8 @@ func TryCastValueContext[R any, T any](ctx context.Context, v T, recursive bool,
 	switch nval := val.(type) {
 	case *R:
 		return *nval, nil
+	case nil:
+		return rVal, nil
 	default:
 		return val.(R), nil
 	}

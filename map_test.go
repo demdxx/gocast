@@ -63,6 +63,13 @@ func TestMap(t *testing.T) {
 
 	target7 := MapRecursiveContext[string, map[string]any](context.TODO(), struct{ Foo struct{ Bar string } }{Foo: struct{ Bar string }{Bar: "boo"}})
 	assert.Equal(t, true, reflect.DeepEqual(map[string]map[string]any{"Foo": {"Bar": "boo"}}, target7))
+
+	// Nil check for map values
+	var nilMap = map[string]any{"default": nil, "sub1": []any{nil}, "sub2": map[string]any{"n1": nil, "n2": nil, "n3": nil}}
+	var target8 = map[string]any{}
+	err = ToMap(&target8, nilMap, true)
+	assert.NoError(t, err)
+	assert.Equal(t, true, reflect.DeepEqual(nilMap, target8))
 }
 
 func TestIsMap(t *testing.T) {

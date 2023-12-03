@@ -173,7 +173,7 @@ func TestToSlice(t *testing.T) {
 	for _, test := range tests {
 		res, err := test.cfn(test.src)
 		if test.err != nil {
-			assert.EqualError(t, err, test.err.Error())
+			assert.ErrorContains(t, err, test.err.Error())
 		} else if assert.NoError(t, err) {
 			assert.ElementsMatch(t, test.trg, res)
 		}

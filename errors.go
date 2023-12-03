@@ -13,6 +13,9 @@ func (w *errorWrapper) Error() string { return w.msg + ": " + w.err.Error() }
 func (w *errorWrapper) Unwrap() error { return w.err }
 
 func wrapError(err error, msg string) error {
+	if err == nil {
+		return nil
+	}
 	return &errorWrapper{err: err, msg: msg}
 }
 

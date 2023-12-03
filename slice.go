@@ -173,17 +173,20 @@ func AnySliceContext[R any](ctx context.Context, src any, tags ...string) []R {
 // TryToAnySliceContext converts any input slice into destination type slice
 func TryToAnySliceContext(ctx context.Context, dst, src any, tags ...string) error {
 	if dst == nil || src == nil {
-		return ErrInvalidParams
+		if dst == nil {
+			return wrapError(ErrInvalidParams, "TryToAnySliceContext `destenation` parameter is nil")
+		}
+		return wrapError(ErrInvalidParams, "TryToAnySliceContext `source` parameter is nil")
 	}
 
 	dstSlice := reflectTarget(reflect.ValueOf(dst))
 	if k := dstSlice.Kind(); k != reflect.Slice && k != reflect.Array {
-		return ErrInvalidParams
+		return wrapError(ErrInvalidParams, "TryToAnySliceContext `destenation` parameter is not a slice or array")
 	}
 
 	srcSlice := reflectTarget(reflect.ValueOf(src))
 	if k := srcSlice.Kind(); k != reflect.Slice && k != reflect.Array {
-		return ErrInvalidParams
+		return wrapError(ErrInvalidParams, "TryToAnySliceContext `source` parameter is not a slice or array")
 	}
 
 	dstElemType := dstSlice.Type().Elem()
@@ -216,7 +219,11 @@ func TryToAnySliceContext(ctx context.Context, dst, src any, tags ...string) err
 			}
 		}
 		if v, err := ReflectTryToTypeContext(ctx, srcItem, dstElemType, true, tags...); err == nil {
-			dstItem.Set(reflect.ValueOf(v))
+			if v == nil {
+				dstItem.Set(reflect.Zero(dstElemType))
+			} else {
+				dstItem.Set(reflect.ValueOf(v))
+			}
 		} else {
 			return err
 		}

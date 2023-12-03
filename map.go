@@ -32,7 +32,10 @@ func TryMapCopy[K comparable, V any](dst map[K]V, src any, recursive bool, tags 
 // TryMapCopyContext converts source into destination or return error
 func TryMapCopyContext[K comparable, V any](ctx context.Context, dst map[K]V, src any, recursive bool, tags ...string) error {
 	if dst == nil || src == nil {
-		return ErrInvalidParams
+		if dst == nil {
+			return wrapError(ErrInvalidParams, "TryMapCopyContext `destenation` parameter is nil")
+		}
+		return wrapError(ErrInvalidParams, "TryMapCopyContext `source` parameter is nil")
 	}
 	var (
 		srcVal  = reflectTarget(reflect.ValueOf(src))
@@ -51,7 +54,7 @@ func TryMapCopyContext[K comparable, V any](ctx context.Context, dst map[K]V, sr
 				}
 			}
 			if err != nil {
-				return err
+				return wrapError(err, `"`+Str(k.Interface())+`" map key`)
 			}
 		}
 	case reflect.Struct:
@@ -71,7 +74,7 @@ func TryMapCopyContext[K comparable, V any](ctx context.Context, dst map[K]V, sr
 						dst[key], err = TryCastContext[V](ctx, fl, tags...)
 					}
 					if err != nil {
-						return err
+						return wrapError(err, "`"+name+"` struct key")
 					}
 				} // end if !omitempty || !IsEmpty(fl)
 			}
@@ -92,7 +95,10 @@ func ToMap(dst, src any, recursive bool, tags ...string) error {
 // tag defines the tags name in the structure to map the keys
 func ToMapContext(ctx context.Context, dst, src any, recursive bool, tags ...string) error {
 	if dst == nil || src == nil {
-		return ErrInvalidParams
+		if dst == nil {
+			return wrapError(ErrInvalidParams, "ToMapContext `destenation` parameter is nil")
+		}
+		return wrapError(ErrInvalidParams, "ToMapContext `source` parameter is nil")
 	}
 
 	var (
@@ -117,7 +123,7 @@ func ToMapContext(ctx context.Context, dst, src any, recursive bool, tags ...str
 				if recursive {
 					dest[k.Interface()], err = mapDestValue(field.Interface(), destType, recursive, tags...)
 					if err != nil {
-						return err
+						return wrapError(err, Str(k.Interface()))
 					}
 				} else {
 					dest[k.Interface()] = field.Interface()
@@ -133,7 +139,7 @@ func ToMapContext(ctx context.Context, dst, src any, recursive bool, tags ...str
 						if recursive {
 							dest[name], err = mapDestValue(fl, destType, recursive, tags...)
 							if err != nil {
-								return err
+								return wrapError(err, "`"+name+"` value")
 							}
 						} else {
 							dest[name] = fl

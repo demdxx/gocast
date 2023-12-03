@@ -34,7 +34,10 @@ func TryCopyStruct(dst, src any, tags ...string) (err error) {
 // TryCopyStructContext convert any input type into the target structure
 func TryCopyStructContext(ctx context.Context, dst, src any, tags ...string) (err error) {
 	if dst == nil || src == nil {
-		return ErrInvalidParams
+		if dst == nil {
+			return wrapError(ErrInvalidParams, "TryCopyStructContext `destenation` parameter is nil")
+		}
+		return wrapError(ErrInvalidParams, "TryCopyStructContext `source` parameter is nil")
 	}
 
 	if sintf, ok := dst.(CastSetter); ok {
@@ -84,33 +87,39 @@ func TryCopyStructContext(ctx context.Context, dst, src any, tags ...string) (er
 
 		// Set field value
 		if v == nil {
-			if err = setFieldValueReflect(ctx, field, reflect.Zero(field.Type())); err != nil {
-				break
-			}
-			continue
-		}
-
-		switch field.Kind() {
-		case reflect.Struct:
-			err = TryCopyStructContext(ctx, field.Addr().Interface(), v, tags...)
-		default:
-			var vl any
-			if vl, err = TryToTypeContext(ctx, v, field.Type(), tags...); err == nil {
-				val := reflect.ValueOf(vl)
-				if val.Kind() == reflect.Ptr && val.Kind() != field.Kind() {
-					val = val.Elem()
-				}
-				err = setFieldValueReflect(ctx, field, val)
-			} else if setter, _ := field.Interface().(CastSetter); setter != nil {
-				err = setter.CastSet(ctx, v)
-			} else if field.CanAddr() {
-				if setter, _ := field.Addr().Interface().(CastSetter); setter != nil {
+			err = setFieldValueReflect(ctx, field, reflect.Zero(field.Type()))
+		} else {
+			switch field.Kind() {
+			case reflect.Struct:
+				err = TryCopyStructContext(ctx, field.Addr().Interface(), v, tags...)
+			default:
+				var (
+					vl any
+					ok = false
+				)
+				if setter, _ := field.Interface().(CastSetter); setter != nil {
 					err = setter.CastSet(ctx, v)
+					ok = true
+				} else if field.CanAddr() {
+					if setter, _ := field.Addr().Interface().(CastSetter); setter != nil {
+						err = setter.CastSet(ctx, v)
+						ok = true
+					}
+				}
+				if !ok {
+					if vl, err = TryToTypeContext(ctx, v, field.Type(), tags...); err == nil {
+						val := reflect.ValueOf(vl)
+						if val.Kind() == reflect.Ptr && val.Kind() != field.Kind() {
+							val = val.Elem()
+						}
+						err = setFieldValueReflect(ctx, field, val)
+					}
 				}
 			}
 		}
 
 		if err != nil {
+			err = wrapError(err, ft.Name)
 			break
 		}
 	}
