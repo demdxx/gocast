@@ -172,6 +172,36 @@ func ReflectStructFieldNames(t reflect.Type, tag string) []string {
 	return fields
 }
 
+// StructAllFieldNames returns the field names from the structure including names from tags
+func StructAllFieldNames(st any, tags ...string) map[string][]string {
+	return StructAllFieldNamesContext(context.Background(), st, tags...)
+}
+
+// StructAllFieldNamesContext returns the field names from the structure including names from tags
+func StructAllFieldNamesContext(ctx context.Context, st any, tags ...string) map[string][]string {
+	return ReflectStructAllFieldNamesContext(ctx, reflectTarget(reflect.ValueOf(st)).Type(), tags...)
+}
+
+// ReflectStructAllFieldNames returns the field names from the structure including names from tags
+func ReflectStructAllFieldNames(t reflect.Type, tags ...string) map[string][]string {
+	return ReflectStructAllFieldNamesContext(context.Background(), t, tags...)
+}
+
+// ReflectStructAllFieldNamesContext returns the field names from the structure including names from tags
+func ReflectStructAllFieldNamesContext(ctx context.Context, t reflect.Type, tags ...string) map[string][]string {
+	if t.Kind() != reflect.Struct {
+		return nil
+	}
+	fields := make(map[string][]string, t.NumField())
+	for i := 0; i < t.NumField(); i++ {
+		tfield := t.Field(i)
+		if fnames := filedNameAndTags(tfield, tags...); len(fnames) > 0 {
+			fields[tfield.Name] = fnames
+		}
+	}
+	return fields
+}
+
 // StructFieldTags returns Map with key->tag matching
 func StructFieldTags(st any, tag string) map[string]string {
 	fields := map[string]string{}
@@ -416,4 +446,22 @@ func fieldTag(f reflect.StructField, tag string) string {
 		return fields
 	}
 	return f.Name
+}
+
+func filedNameAndTags(f reflect.StructField, tags ...string) []string {
+	names := []string{f.Name}
+	if len(tags) == 0 {
+		return names
+	}
+	deDup := map[string]bool{f.Name: true}
+	for _, tag := range tags {
+		if tag == "-" || tag == "" {
+			continue
+		}
+		if tagName := strings.TrimSuffix(f.Tag.Get(tag), ",omitempty"); tagName != "" && tagName != "-" && !deDup[tagName] {
+			deDup[tagName] = true
+			names = append(names, tagName)
+		}
+	}
+	return names
 }

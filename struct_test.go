@@ -2,6 +2,7 @@ package gocast
 
 import (
 	"context"
+	"reflect"
 	"testing"
 	"time"
 
@@ -196,6 +197,19 @@ func TestStructFieldTags(t *testing.T) {
 			"PublishedAt": "published_at",
 			"Value":       "value",
 			"ignore":      "ignore"}, fields)
+}
+
+func TestStructAllFieldNames(t *testing.T) {
+	fields := StructAllFieldNames(struct {
+		F string `field:"f" json:"F"`
+		J int    `field:"j" json:"J"`
+	}{}, "field", "json")
+	assert.True(t, reflect.DeepEqual(fields, map[string][]string{
+		"F": {"F", "f"},
+		"J": {"J", "j"},
+	}))
+
+	assert.Nil(t, StructAllFieldNames(map[string]string{}, "field", "json"))
 }
 
 func TestIsStruct(t *testing.T) {
