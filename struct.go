@@ -331,6 +331,31 @@ func setFieldValue(ctx context.Context, field reflect.Value, value any) (err err
 	return err
 }
 
+func setFieldValueNoCastSetter(ctx context.Context, field reflect.Value, value any, autoCast ...bool) (err error) {
+	switch field.Interface().(type) {
+	case time.Time, *time.Time:
+		err = setFieldTimeValue(field, value)
+	default:
+		vl := reflect.ValueOf(value)
+		if field.Kind() == vl.Kind() || field.Kind() == reflect.Interface {
+			field.Set(vl)
+		} else if len(autoCast) > 0 && autoCast[0] {
+			if nval, err := ReflectTryToTypeContext(ctx, vl, field.Type(), true); err == nil {
+				val := reflect.ValueOf(nval)
+				if val.Kind() == reflect.Ptr && val.Kind() != field.Kind() {
+					val = val.Elem()
+				}
+				field.Set(val)
+			} else {
+				return wrapError(ErrUnsupportedType, field.Type().String())
+			}
+		} else {
+			return wrapError(ErrUnsupportedType, field.Type().String())
+		}
+	}
+	return err
+}
+
 func setFieldValueReflect(ctx context.Context, field, value reflect.Value) (err error) {
 	switch field.Interface().(type) {
 	case time.Time, *time.Time:
