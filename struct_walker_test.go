@@ -36,7 +36,7 @@ func TestStructWalk(t *testing.T) {
 			V2 int    `env:"TEST_V2"`
 		}{}
 
-		StructWalk(ctx, &testStruct, func(ctx context.Context, curObj StructWalkObject, field StructWalkField, path []string) error {
+		err := StructWalk(ctx, &testStruct, func(ctx context.Context, curObj StructWalkObject, field StructWalkField, path []string) error {
 			assert.True(t, field.IsEmpty())
 			err := field.SetValue(ctx, os.Getenv(field.Tag("env")))
 			if assert.NoError(t, err, `set value for field "%s"`, field.Name()) {
@@ -51,6 +51,7 @@ func TestStructWalk(t *testing.T) {
 			}
 			return err
 		})
+		assert.Error(t, err)
 	})
 
 	t.Run("init.nested", func(t *testing.T) {
