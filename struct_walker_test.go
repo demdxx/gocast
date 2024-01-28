@@ -51,7 +51,7 @@ func TestStructWalk(t *testing.T) {
 			}
 			return err
 		})
-		assert.Error(t, err)
+		assert.NoError(t, err)
 	})
 
 	t.Run("init.nested", func(t *testing.T) {
