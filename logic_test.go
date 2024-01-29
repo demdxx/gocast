@@ -34,4 +34,9 @@ func TestLogic(t *testing.T) {
 		assert.Equal(t, 1, IfThen(true, 1, 2))
 		assert.Equal(t, 2, IfThen(false, 1, 2))
 	})
+
+	t.Run("PtrAsValue", func(t *testing.T) {
+		assert.Equal(t, 1, PtrAsValue(&[]int{1}[0], 2))
+		assert.Equal(t, 2, PtrAsValue((*int)(nil), 2))
+	})
 }
