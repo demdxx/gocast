@@ -76,7 +76,7 @@ func IsEmptyByReflection(v reflect.Value) bool {
 		return true
 	}
 	switch v.Kind() {
-	case reflect.Interface:
+	case reflect.Interface, reflect.Pointer:
 		return v.IsNil()
 	case reflect.Bool:
 		return !v.Bool()
