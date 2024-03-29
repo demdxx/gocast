@@ -26,6 +26,9 @@ func TestEmpty(t *testing.T) {
 		{src: "123", target: false},
 		{src: "", target: true},
 		{src: nil, target: true},
+		{src: func() *struct{ s string } { return nil }(), target: true},
+		{src: any(nil), target: true},
+		{src: any(func() *struct{ s string } { return nil }()), target: true},
 		{src: []byte("125."), target: false},
 		{src: []byte(""), target: true},
 		{src: true, target: false},
@@ -46,6 +49,7 @@ func TestEmpty(t *testing.T) {
 		{src: []float32{1}, target: false},
 		{src: []float64{1}, target: false},
 		{src: []bool{}, target: true},
+		{src: []string{}, target: true},
 	}
 
 	t.Run("IsEmpty", func(t *testing.T) {

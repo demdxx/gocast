@@ -66,6 +66,8 @@ func IsEmpty[T any](v T) bool {
 		return len(tv) == 0
 	case []bool:
 		return len(tv) == 0
+	case []string:
+		return len(tv) == 0
 	}
 	return IsEmptyByReflection(reflect.ValueOf(v))
 }
@@ -76,8 +78,11 @@ func IsEmptyByReflection(v reflect.Value) bool {
 		return true
 	}
 	switch v.Kind() {
-	case reflect.Interface, reflect.Pointer:
-		return v.IsNil()
+	case reflect.Interface, reflect.Ptr:
+		if v.IsNil() {
+			return true
+		}
+		return IsEmptyByReflection(v.Elem())
 	case reflect.Bool:
 		return !v.Bool()
 	case reflect.Slice, reflect.Array, reflect.Map, reflect.String:
