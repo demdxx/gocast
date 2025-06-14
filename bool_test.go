@@ -33,7 +33,7 @@ func TestToBool(t *testing.T) {
 		{src: []int{}, target: false},
 	}
 	for _, test := range tests {
-		if v := ToBool(test.src); v != test.target {
+		if v := Bool(test.src); v != test.target {
 			t.Errorf("target must be equal %v != %v", test.src, test.target)
 		}
 	}

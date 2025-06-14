@@ -53,38 +53,23 @@ func ReflectToFloat64(v reflect.Value) float64 {
 	return 0.
 }
 
-// ToFloat64 from any other basic types
-//
-// Deprecated: Use Number[float64](v) instead
-func ToFloat64(v any) float64 {
-	return Number[float64](v)
-}
-
-// ToFloat32 from any other basic types
-//
-// Deprecated: Use Number[float32](v) instead
-func ToFloat32(v any) float32 {
-	return Number[float32](v)
-}
-
-// ToFloat from any other basic types
-//
-// Deprecated: Use Number[float64](v) instead
-func ToFloat(v any) float64 {
-	return Number[float64](v)
-}
-
 // Float from any other basic type, float64 by default
+//
+//go:inline
 func Float(v any) float64 {
 	return Number[float64](v)
 }
 
 // Float64 from any other basic type
+//
+//go:inline
 func Float64(v any) float64 {
 	return Number[float64](v)
 }
 
 // Float32 from any other basic type
+//
+//go:inline
 func Float32(v any) float32 {
 	return Number[float32](v)
 }

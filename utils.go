@@ -108,9 +108,29 @@ func getValue(v any) any {
 }
 
 func reflectTarget(r reflect.Value) reflect.Value {
+	if !r.IsValid() {
+		return r
+	}
 	for kind := r.Kind(); kind == reflect.Ptr || kind == reflect.Interface; {
-		r = r.Elem()
+		if r.IsNil() {
+			break
+		}
+		if r = r.Elem(); !r.IsValid() {
+			break
+		}
 		kind = r.Kind()
 	}
 	return r
+}
+
+// IsNil checks if the provided value is nil.
+func IsNil(v any) bool {
+	if v == nil {
+		return true
+	}
+	rv := reflectTarget(reflect.ValueOf(v))
+	if rv.Kind() == reflect.Ptr || rv.Kind() == reflect.Interface {
+		return rv.IsNil()
+	}
+	return false
 }

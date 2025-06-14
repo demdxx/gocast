@@ -33,13 +33,13 @@ func TestToFloat(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if v := ToFloat64(test.src); v != test.target {
+		if v := Float64(test.src); v != test.target {
 			t.Errorf("target must be equal %v != %f", test.src, test.target)
 		}
-		if v := ToFloat32(test.src); v != float32(test.target) {
+		if v := Float32(test.src); v != float32(test.target) {
 			t.Errorf("target must be equal %v != %f", test.src, test.target)
 		}
-		if v := ToFloat(test.src); v != test.target {
+		if v := Float(test.src); v != test.target {
 			t.Errorf("target must be equal %v != %f", test.src, test.target)
 		}
 		if v := Float(test.src); v != test.target {
@@ -91,6 +91,6 @@ func TestToFloat64ByReflect(t *testing.T) {
 func BenchmarkToFloat(b *testing.B) {
 	values := []any{120, int64(122), "123", "120.0", "120.", []byte("125."), true, false}
 	for n := 0; n < b.N; n++ {
-		_ = ToFloat(values[n%len(values)])
+		_ = Float(values[n%len(values)])
 	}
 }

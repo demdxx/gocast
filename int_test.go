@@ -33,7 +33,7 @@ func TestToInt(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if ToInt(test.src) != test.target {
+		if Int(test.src) != test.target {
 			t.Errorf("target must be equal %v != %d", test.target, test.target)
 		}
 		if Int(test.src) != test.target {
@@ -108,7 +108,7 @@ func TestToInt64ByReflect(t *testing.T) {
 func BenchmarkToInt(b *testing.B) {
 	values := []any{120, uint64(122), "123", "120.0", "-120.", []byte("125."), true, false}
 	for n := 0; n < b.N; n++ {
-		_ = ToInt(values[n%len(values)])
+		_ = Int(values[n%len(values)])
 	}
 }
 
@@ -140,7 +140,7 @@ func TestToUInt(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if ToUint(test.src) != test.target {
+		if Uint(test.src) != test.target {
 			t.Errorf("target must be equal %v != %d", test.target, test.target)
 		}
 	}
@@ -183,6 +183,6 @@ func TestToUint64ByReflect(t *testing.T) {
 func BenchmarkToUint(b *testing.B) {
 	values := []any{120, int64(122), "123", "120.0", "120.", []byte("125."), true, false}
 	for n := 0; n < b.N; n++ {
-		_ = ToUint(values[n%len(values)])
+		_ = Uint(values[n%len(values)])
 	}
 }

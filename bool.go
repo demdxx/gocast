@@ -129,10 +129,3 @@ func Bool(v any) bool {
 	}
 	return ReflectToBool(reflect.ValueOf(v))
 }
-
-// ToBool from any other basic types
-//
-// Deprecated: Use Bool(v) instead
-func ToBool(v any) bool {
-	return Bool(v)
-}

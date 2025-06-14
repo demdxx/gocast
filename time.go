@@ -40,8 +40,11 @@ var timeFormats = []string{
 }
 
 // ParseTime from string
-func ParseTime(tm string) (t time.Time, err error) {
-	for _, f := range timeFormats {
+func ParseTime(tm string, tmFmt ...string) (t time.Time, err error) {
+	if len(tmFmt) == 0 {
+		tmFmt = timeFormats
+	}
+	for _, f := range tmFmt {
 		if t, err = time.Parse(f, tm); err == nil {
 			break
 		}

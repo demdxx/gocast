@@ -265,20 +265,6 @@ func ToMapFrom(src any, recursive bool, tags ...string) (map[any]any, error) {
 	return dst, err
 }
 
-// ToSiMap converts input Map/Object type into the map[string]any
-//
-// Deprecated: Use TryMapFrom[string, any](...) instead
-func ToSiMap(src any, recursive bool, tags ...string) (map[string]any, error) {
-	return TryMapFrom[string, any](src, recursive, tags...)
-}
-
-// ToStringMap converts input Map/Object type into the map[string]string
-//
-// Deprecated: Use TryMapFrom[string, string](...) instead
-func ToStringMap(src any, recursive bool, tags ...string) (map[string]string, error) {
-	return TryMapFrom[string, string](src, recursive, tags...)
-}
-
 // IsMap checks if the input value is a Map/Object type
 func IsMap(v any) bool {
 	switch v.(type) {

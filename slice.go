@@ -25,6 +25,8 @@ import (
 )
 
 // TrySlice converts one type of array to other or resturns error
+//
+//go:inline
 func TrySlice[R any, S any](src []S, tags ...string) (res []R, err error) {
 	return TrySliceContext[R](context.Background(), src, tags...)
 }
@@ -49,6 +51,8 @@ func TrySliceContext[R any, S any](ctx context.Context, src []S, tags ...string)
 }
 
 // Slice converts one type of array to other or resturns nil if not compatible
+//
+//go:inline
 func Slice[R any, S any](src []S, tags ...string) []R {
 	return SliceContext[R](context.Background(), src, tags...)
 }
@@ -59,94 +63,7 @@ func SliceContext[R any, S any](ctx context.Context, src []S, tags ...string) []
 	return res
 }
 
-// ToInterfaceSlice converts any input slice into Interface type slice
-//
-// Deprecated: Use Slice[any](v) or AnySlice[any](v) instead
-func ToInterfaceSlice(v any) []any {
-	switch sv := v.(type) {
-	case []any:
-		return sv
-	default:
-		var result []any = nil
-		eachSlice(v, func(length int) {
-			if length > 0 {
-				result = make([]any, length)
-			}
-		}, func(v any, i int) {
-			result[i] = v
-		})
-		return result
-	}
-}
-
-// ToStringSlice converts any input slice into String type slice
-//
-// Deprecated: Use Slice[string](v) or AnySlice[string](v) instead
-func ToStringSlice(v any) []string {
-	switch sv := v.(type) {
-	case []string:
-		return sv
-	default:
-		var result []string = nil
-		eachSlice(v, func(length int) {
-			if length > 0 {
-				result = make([]string, length)
-			}
-		}, func(v any, i int) {
-			result[i] = Str(v)
-		})
-		return result
-	}
-}
-
-// ToIntSlice converts any input slice into Int type slice
-//
-// Deprecated: Use Slice[int](v) or AnySlice[int](v) instead
-func ToIntSlice(v any) []int {
-	switch sv := v.(type) {
-	case []int:
-		return sv
-	default:
-		var result []int = nil
-		eachSlice(v, func(length int) {
-			if length > 0 {
-				result = make([]int, length)
-			}
-		}, func(v any, i int) {
-			result[i] = Int(v)
-		})
-		return result
-	}
-}
-
-// ToFloat64Slice converts any input slice into Float64 type slice
-//
-// Deprecated: Use Slice[float64](v) or AnySlice[float64](v) instead
-func ToFloat64Slice(v any) []float64 {
-	switch sv := v.(type) {
-	case []float64:
-		return sv
-	default:
-		var result []float64 = nil
-		eachSlice(v, func(length int) {
-			if length > 0 {
-				result = make([]float64, length)
-			}
-		}, func(v any, i int) {
-			result[i] = Float64(v)
-		})
-		return result
-	}
-}
-
-// ToSlice converts any input slice into destination type slice
-//
-// Deprecated: Use Slice[type](v) or TrySlice[type](v) or AnySlice[type](v) or TryAnySlice[type](v) instead
-func ToSlice(dst, src any, tags ...string) error {
-	return TryToAnySliceContext(context.Background(), dst, src, tags...)
-}
-
-// TryToAnySlice converts any input slice into destination type slice as return value
+// TryAnySlice converts any input slice into destination type slice as return value
 func TryAnySlice[R any](src any, tags ...string) (res []R, err error) {
 	return TryAnySliceContext[R](context.Background(), src, tags...)
 }
@@ -168,6 +85,13 @@ func AnySliceContext[R any](ctx context.Context, src any, tags ...string) []R {
 	res := []R{}
 	_ = TryToAnySliceContext(ctx, &res, src, tags...)
 	return res
+}
+
+// TryToAnySlice converts any input slice into destination type slice
+//
+//go:inline
+func TryToAnySlice(dst, src any, tags ...string) error {
+	return TryToAnySliceContext(context.Background(), dst, src, tags...)
 }
 
 // TryToAnySliceContext converts any input slice into destination type slice
@@ -237,8 +161,8 @@ func IsSlice(v any) bool {
 	switch v.(type) {
 	// Check default types first for performance
 	case []any, []string, []bool,
-		[]int, []int16, []int32, []int64,
-		[]uint, []uint16, []uint32, []uint64,
+		[]int, []int8, []int16, []int32, []int64,
+		[]uint, []uint8, []uint16, []uint32, []uint64,
 		[]float32, []float64:
 		return true
 	default:
@@ -246,135 +170,4 @@ func IsSlice(v any) bool {
 		kind := refValue.Kind()
 		return kind == reflect.Slice || kind == reflect.Array
 	}
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// Helpers
-///////////////////////////////////////////////////////////////////////////////
-
-func eachSlice(v any, fi func(length int), f func(v any, i int)) bool {
-	switch sv := v.(type) {
-	case []any:
-		if fi != nil {
-			fi(len(sv))
-		}
-		for i, v := range sv {
-			f(v, i)
-		}
-		// String
-	case []string:
-		if fi != nil {
-			fi(len(sv))
-		}
-		for i, v := range sv {
-			f((any)(v), i)
-		}
-		// Numeric
-	case []int:
-		if fi != nil {
-			fi(len(sv))
-		}
-		for i, v := range sv {
-			f((any)(v), i)
-		}
-	case []int64:
-		if fi != nil {
-			fi(len(sv))
-		}
-		for i, v := range sv {
-			f((any)(v), i)
-		}
-	case []int32:
-		if fi != nil {
-			fi(len(sv))
-		}
-		for i, v := range sv {
-			f((any)(v), i)
-		}
-	case []int16:
-		if fi != nil {
-			fi(len(sv))
-		}
-		for i, v := range sv {
-			f((any)(v), i)
-		}
-	case []int8:
-		if fi != nil {
-			fi(len(sv))
-		}
-		for i, v := range sv {
-			f((any)(v), i)
-		}
-		// Unsigned numeric
-	case []uint:
-		if fi != nil {
-			fi(len(sv))
-		}
-		for i, v := range sv {
-			f((any)(v), i)
-		}
-	case []uint64:
-		if fi != nil {
-			fi(len(sv))
-		}
-		for i, v := range sv {
-			f((any)(v), i)
-		}
-	case []uint32:
-		if fi != nil {
-			fi(len(sv))
-		}
-		for i, v := range sv {
-			f((any)(v), i)
-		}
-	case []uint16:
-		if fi != nil {
-			fi(len(sv))
-		}
-		for i, v := range sv {
-			f((any)(v), i)
-		}
-	case []uint8:
-		if fi != nil {
-			fi(len(sv))
-		}
-		for i, v := range sv {
-			f((any)(v), i)
-		}
-		// Float numeric
-	case []float32:
-		if fi != nil {
-			fi(len(sv))
-		}
-		for i, v := range sv {
-			f((any)(v), i)
-		}
-	case []float64:
-		if fi != nil {
-			fi(len(sv))
-		}
-		for i, v := range sv {
-			f((any)(v), i)
-		}
-	case []bool:
-		if fi != nil {
-			fi(len(sv))
-		}
-		for i, v := range sv {
-			f((any)(v), i)
-		}
-	default:
-		rVal := reflect.ValueOf(sv)
-		if k := rVal.Kind(); k == reflect.Slice || k == reflect.Array {
-			if fi != nil {
-				fi(rVal.Len())
-			}
-			for i := 0; i < rVal.Len(); i++ {
-				f(rVal.Index(i).Interface(), i)
-			}
-		} else {
-			return false
-		}
-	}
-	return true
 }

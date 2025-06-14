@@ -116,10 +116,30 @@ func TestStructGetSetFieldValue(t *testing.T) {
 	assert.Error(t, err, "get UndefinedField value must be error")
 }
 
-func TestStructCast(t *testing.T) {
-	res, err := Struct[testStruct](testStructPreparedValue, `field`)
-	assert.NoError(t, err)
-	testPreparedStruct(t, &res)
+func TestStructCopyCast(t *testing.T) {
+	t.Run("new", func(t *testing.T) {
+		res, err := Struct[testStruct](testStructPreparedValue, `field`)
+		assert.NoError(t, err)
+		testPreparedStruct(t, &res)
+	})
+
+	t.Run("copy", func(t *testing.T) {
+		var res testStruct
+		err := TryCopyStruct(&res, testStructPreparedValue, `field`)
+		assert.NoError(t, err)
+		testPreparedStruct(t, &res)
+	})
+
+	t.Run("nil-1", func(t *testing.T) {
+		err := TryCopyStruct(nil, testStructPreparedValue, `field`)
+		assert.ErrorIs(t, err, ErrInvalidParams)
+	})
+
+	t.Run("nil-2", func(t *testing.T) {
+		var res testStruct
+		err := TryCopyStruct(&res, nil, `field`)
+		assert.ErrorIs(t, err, ErrInvalidParams)
+	})
 }
 
 func TestStructCastNested(t *testing.T) {

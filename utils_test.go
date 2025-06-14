@@ -3,6 +3,8 @@ package gocast
 import (
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEmpty(t *testing.T) {
@@ -72,5 +74,30 @@ func BenchmarkIsEmpty(b *testing.B) {
 	values := []any{120, int64(122), "123", "120.0", "120.", []byte("125."), true, false}
 	for n := 0; n < b.N; n++ {
 		_ = IsEmpty(values[n%len(values)])
+	}
+}
+
+func TestIsNil(t *testing.T) {
+	tests := []struct {
+		src    any
+		target bool
+	}{
+		{src: nil, target: true},
+		{src: 120, target: false},
+		{src: int8(120), target: false},
+		{src: int16(120), target: false},
+		{src: int32(120), target: false},
+		{src: int64(120), target: false},
+		{src: uint(121), target: false},
+		{src: uint8(121), target: false},
+		{src: uint16(121), target: false},
+		{src: uint32(121), target: false},
+		{src: uint64(121), target: false},
+		{src: uintptr(121), target: false},
+		{src: any(nil), target: true},
+	}
+
+	for _, test := range tests {
+		assert.Equal(t, test.target, IsNil(test.src), "IsNil failed for %T", test.src)
 	}
 }

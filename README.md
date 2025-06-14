@@ -56,6 +56,8 @@ gocast.Cast[float64]("2.")       // 2.0
 val, err := gocast.TryCast[int]("123.2") // 123, <nil>
 
 res := gocast.Map[string, any](struct{ID int64}{ID: 1}) // map[string]any{"ID": 1}
+
+gocast.Copy(map[string]any{"ID": 1}) // map[string]any{"ID": 1}
 ```
 
 ```go

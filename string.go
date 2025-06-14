@@ -54,23 +54,11 @@ func TryReflectStr(v reflect.Value) (string, error) {
 }
 
 // ReflectStr converts reflection value to string
+//
+//go:inline
 func ReflectStr(v reflect.Value) string {
 	s, _ := TryReflectStr(v)
 	return s
-}
-
-// TryReflectToString converts reflection value to string
-//
-// Deprecated: Use TryReflectStr instead
-func TryReflectToString(v reflect.Value) (string, error) {
-	return TryReflectStr(v)
-}
-
-// ReflectToString converts reflection value to string
-//
-// Deprecated: Use TryReflectStr instead
-func ReflectToString(v reflect.Value) string {
-	return ReflectStr(v)
 }
 
 // TryStr from any type
@@ -119,23 +107,11 @@ func TryStr(v any) (string, error) {
 }
 
 // Str returns string value from any type
+//
+//go:inline
 func Str(v any) string {
 	s, _ := TryStr(v)
 	return s
-}
-
-// ToString from any type
-//
-// Deprecated: Use Str instead
-func ToString(v any) string {
-	return Str(v)
-}
-
-// TryToString returns string value from any type
-//
-// Deprecated: Use TryStr instead
-func TryToString(v any) (string, error) {
-	return TryStr(v)
 }
 
 // IsStr returns true if value is string

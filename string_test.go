@@ -33,13 +33,13 @@ var stringTypecastTests = []struct {
 
 func TestToStringByReflect(t *testing.T) {
 	for _, test := range stringTypecastTests {
-		assert.Equal(t, ReflectToString(reflect.ValueOf(test.value)), test.target)
+		assert.Equal(t, ReflectStr(reflect.ValueOf(test.value)), test.target)
 	}
 }
 
 func TestToString(t *testing.T) {
 	for _, test := range stringTypecastTests {
-		assert.Equal(t, ToString(test.value), test.target)
+		assert.Equal(t, Str(test.value), test.target)
 	}
 }
 
@@ -68,7 +68,7 @@ func BenchmarkToStringByReflect(b *testing.B) {
 		for pb.Next() {
 			i := rand.Intn(len(stringTypecastTests))
 			v := reflect.ValueOf(stringTypecastTests[i].value)
-			_ = ReflectToString(v)
+			_ = ReflectStr(v)
 		}
 	})
 }
@@ -78,7 +78,7 @@ func BenchmarkToString(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			i := rand.Intn(len(stringTypecastTests))
-			_ = ToString(stringTypecastTests[i].value)
+			_ = Str(stringTypecastTests[i].value)
 		}
 	})
 }
