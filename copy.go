@@ -57,6 +57,44 @@ func TryCopy[T any](src T) (T, error) {
 	return dst, nil
 }
 
+// Copy creates a deep copy of the provided value using reflection.
+// It returns a new value of the same type as the source.
+// If the source value is nil, it returns the zero value of the type.
+//
+//go:inline
+func Copy[T any](src T) T {
+	dst, err := TryCopy(src)
+	if err != nil {
+		panic(err)
+	}
+	return dst
+}
+
+// TryAnyCopy creates a deep copy of the provided value using reflection.
+func TryAnyCopy(src any) (any, error) {
+	// Use a visited map to handle circular references
+	visited := make(map[uintptr]reflect.Value)
+
+	dst := reflect.New(reflect.TypeOf(src)).Elem()
+	err := deepCopy(reflect.ValueOf(src), dst, visited)
+	if err != nil {
+		return nil, err
+	}
+
+	return dst.Interface(), nil
+}
+
+// AnyCopy creates a deep copy of the provided value using reflection.
+//
+//go:inline
+func AnyCopy(src any) any {
+	dst, err := TryAnyCopy(src)
+	if err != nil {
+		panic(err)
+	}
+	return dst
+}
+
 func deepCopy(src, dst reflect.Value, visited map[uintptr]reflect.Value) error {
 	// Handle nil or invalid source values
 	if !src.IsValid() {
@@ -156,15 +194,4 @@ func deepCopy(src, dst reflect.Value, visited map[uintptr]reflect.Value) error {
 	}
 
 	return nil
-}
-
-// Copy creates a deep copy of the provided value using reflection.
-// It returns a new value of the same type as the source.
-// If the source value is nil, it returns the zero value of the type.
-func Copy[T any](src T) T {
-	dst, err := TryCopy(src)
-	if err != nil {
-		panic(err)
-	}
-	return dst
 }

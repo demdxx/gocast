@@ -42,6 +42,14 @@ func testCopy[T any](t *testing.T, src T, expectErr error) T {
 }
 
 func TestCopy(t *testing.T) {
+	type Inner struct {
+		Value int
+		S     string
+		Sl    []int
+	}
+	type Outer struct {
+		Inner Inner
+	}
 	t.Run("nil value", func(t *testing.T) { testCopy[any](t, nil, nil) })
 	t.Run("int value", func(t *testing.T) { testCopy(t, 42, nil) })
 	t.Run("string value", func(t *testing.T) { testCopy(t, "hello", nil) })
@@ -52,20 +60,26 @@ func TestCopy(t *testing.T) {
 		testCopy(t, make(chan int), errors.New("unsupported type: chan int"))
 	})
 	t.Run("deeply nested struct", func(t *testing.T) {
-		type Inner struct {
-			Value int
-			S     string
-			Sl    []int
-		}
-		type Outer struct {
-			Inner Inner
-		}
 		src := Outer{Inner: Inner{
 			Value: 42,
 			S:     "nested",
 			Sl:    []int{1, 2, 3},
 		}}
 		testCopy(t, src, nil)
+	})
+	t.Run("deeply nested any struct", func(t *testing.T) {
+		src := Outer{Inner: Inner{
+			Value: 42,
+			S:     "nested",
+			Sl:    []int{1, 2, 3},
+		}}
+		assert.NotPanics(t, func() {
+			dst := AnyCopy(src)
+			assert.True(t, reflect.TypeOf(dst) == reflect.TypeOf(src),
+				"expected destination type to match source type for deeply nested any struct")
+			assert.True(t, reflect.DeepEqual(dst, src),
+				"expected destination to match source for deeply nested any struct")
+		}, "should not panic for deeply nested any struct")
 	})
 	t.Run("nil pointer", func(t *testing.T) {
 		var src *struct{ Name string }
