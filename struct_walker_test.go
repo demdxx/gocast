@@ -28,8 +28,8 @@ func TestStructWalk(t *testing.T) {
 	})
 
 	t.Run("init.env", func(t *testing.T) {
-		os.Setenv("TEST_V1", "test")
-		os.Setenv("TEST_V2", "1")
+		_ = os.Setenv("TEST_V1", "test")
+		_ = os.Setenv("TEST_V2", "1")
 
 		var testStruct = struct {
 			V1 string `env:"TEST_V1"`
