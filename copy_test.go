@@ -95,3 +95,100 @@ func TestCopy(t *testing.T) {
 		assert.NotEqual(t, src.Name, dst.Name, "expected pointer copy to be independent")
 	})
 }
+
+func TestCopyCircularReferences(t *testing.T) {
+	type Node struct {
+		Value int
+		Next  *Node
+	}
+
+	// Create a circular reference
+	node1 := &Node{Value: 1}
+	node2 := &Node{Value: 2}
+	node1.Next = node2
+	node2.Next = node1
+
+	// Test copying with circular references
+	copied, err := TryCopy(node1)
+	assert.NoError(t, err)
+	assert.NotNil(t, copied)
+	assert.Equal(t, node1.Value, copied.Value)
+	assert.NotSame(t, node1, copied)          // Should be different instances
+	assert.Equal(t, copied.Next.Next, copied) // Should maintain circular reference
+}
+
+func BenchmarkCopy(b *testing.B) {
+	type SimpleStruct struct {
+		ID   int
+		Name string
+	}
+
+	type ComplexStruct struct {
+		ID      int
+		Name    string
+		Values  []int
+		Nested  SimpleStruct
+		Mapping map[string]int
+	}
+
+	simpleData := SimpleStruct{ID: 1, Name: "test"}
+	complexData := ComplexStruct{
+		ID:      1,
+		Name:    "complex",
+		Values:  []int{1, 2, 3, 4, 5},
+		Nested:  SimpleStruct{ID: 2, Name: "nested"},
+		Mapping: map[string]int{"a": 1, "b": 2, "c": 3},
+	}
+
+	b.Run("simple_int", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_, _ = TryCopy(42)
+		}
+	})
+
+	b.Run("simple_string", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_, _ = TryCopy("hello world")
+		}
+	})
+
+	b.Run("simple_struct", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_, _ = TryCopy(simpleData)
+		}
+	})
+
+	b.Run("complex_struct", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_, _ = TryCopy(complexData)
+		}
+	})
+
+	b.Run("slice", func(b *testing.B) {
+		slice := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+		for i := 0; i < b.N; i++ {
+			_, _ = TryCopy(slice)
+		}
+	})
+
+	b.Run("map", func(b *testing.B) {
+		m := map[string]int{"a": 1, "b": 2, "c": 3, "d": 4, "e": 5}
+		for i := 0; i < b.N; i++ {
+			_, _ = TryCopy(m)
+		}
+	})
+}
+
+func TestCopyWithOptions(t *testing.T) {
+	// Test basic copying
+	src := 42
+	dst, err := TryCopyWithOptions(src, CopyOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, src, dst)
+
+	// Test with slice
+	srcSlice := []int{1, 2, 3}
+	dstSlice, err := TryCopyWithOptions(srcSlice, CopyOptions{})
+	assert.NoError(t, err)
+	assert.ElementsMatch(t, srcSlice, dstSlice)
+}

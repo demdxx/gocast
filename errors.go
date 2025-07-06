@@ -28,4 +28,7 @@ var (
 	ErrUnsupportedNumericType        = errors.New("unsupported numeric type")
 	ErrStructFieldNameUndefined      = errors.New("struct field name undefined")
 	ErrStructFieldValueCantBeChanged = errors.New("struct field value cant be changed")
+	ErrCopyCircularReference         = errors.New("circular reference detected during copy")
+	ErrCopyUnsupportedType           = errors.New("copy: unsupported type")
+	ErrCopyInvalidValue              = errors.New("copy: invalid value")
 )
