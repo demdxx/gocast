@@ -129,7 +129,7 @@ func IsNil(v any) bool {
 		return true
 	}
 	rv := reflectTarget(reflect.ValueOf(v))
-	if rv.Kind() == reflect.Ptr || rv.Kind() == reflect.Interface {
+	if rv.Kind() == reflect.Pointer || rv.Kind() == reflect.Interface {
 		return rv.IsNil()
 	}
 	return false

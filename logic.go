@@ -30,11 +30,3 @@ func IfThenExec[T any](cond bool, a func() T, b func() T) T {
 	}
 	return b()
 }
-
-// PtrAsValue returns the value of `v` if `v` is not `nil`, else def
-func PtrAsValue[T any](v *T, def T) T {
-	if v == nil {
-		return def
-	}
-	return *v
-}

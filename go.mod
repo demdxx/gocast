@@ -3,7 +3,7 @@ module github.com/demdxx/gocast/v2
 go 1.18
 
 require (
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.11.1
 	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8
 )
 
