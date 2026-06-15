@@ -173,12 +173,12 @@ func ReflectTryToTypeContext(ctx context.Context, srcVal reflect.Value, t reflec
 	return nil, err
 }
 
-// ReflectToType converts reflection valut to reflection type or returns nil
+// ReflectToType converts a reflection value to a reflection type or returns nil.
 func ReflectToType(v reflect.Value, t reflect.Type, tags ...string) any {
 	return ReflectToTypeContext(context.Background(), v, t, tags...)
 }
 
-// ReflectToType converts reflection valut to reflection type or returns nil
+// ReflectToTypeContext converts a reflection value to a reflection type or returns nil.
 func ReflectToTypeContext(ctx context.Context, v reflect.Value, t reflect.Type, tags ...string) any {
 	val, _ := ReflectTryToTypeContext(ctx, v, t, true, tags...)
 	return val
@@ -203,8 +203,10 @@ func TryCastValueContext[R any, T any](ctx context.Context, v T, recursive bool,
 		return *nval, nil
 	case nil:
 		return rVal, nil
+	case R:
+		return nval, nil
 	default:
-		return val.(R), nil
+		return rVal, wrapError(ErrUnsupportedType, fmt.Sprintf("cannot assert %T to target type", val))
 	}
 }
 

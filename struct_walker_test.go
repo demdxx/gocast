@@ -11,6 +11,120 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestStructWalkObjectParentAndStruct(t *testing.T) {
+	ctx := context.Background()
+
+	type Inner struct{ V int }
+	type Outer struct{ Inner Inner }
+
+	src := Outer{Inner: Inner{V: 42}}
+
+	var (
+		outerObj StructWalkObject
+		innerObj StructWalkObject
+	)
+
+	err := StructWalk(ctx, &src, func(ctx context.Context, curObj StructWalkObject, field StructWalkField, path []string) error {
+		if len(path) == 0 {
+			outerObj = curObj
+		} else {
+			innerObj = curObj
+		}
+		return nil
+	})
+	assert.NoError(t, err)
+
+	// outerObj is the root — it has no parent
+	if assert.NotNil(t, outerObj) {
+		assert.Nil(t, outerObj.Parent())
+		assert.NotNil(t, outerObj.Struct())
+	}
+
+	// innerObj is the nested struct — its parent is outerObj
+	if assert.NotNil(t, innerObj) {
+		assert.Equal(t, outerObj, innerObj.Parent())
+		assert.NotNil(t, innerObj.Struct())
+	}
+}
+
+func TestStructWalkErrWalkSkip(t *testing.T) {
+	ctx := context.Background()
+
+	type S struct {
+		Skip  string
+		Other string
+	}
+
+	visited := map[string]bool{}
+	src := S{Skip: "s", Other: "o"}
+
+	err := StructWalk(ctx, &src, func(ctx context.Context, curObj StructWalkObject, field StructWalkField, path []string) error {
+		visited[field.Name()] = true
+		if field.Name() == "Skip" {
+			return ErrWalkSkip
+		}
+		return nil
+	})
+	assert.NoError(t, err)
+	assert.True(t, visited["Skip"])
+	assert.True(t, visited["Other"])
+}
+
+func TestStructWalkErrWalkStop(t *testing.T) {
+	ctx := context.Background()
+
+	type S struct {
+		A string
+		B string
+		C string
+	}
+
+	visited := []string{}
+	src := S{A: "a", B: "b", C: "c"}
+
+	err := StructWalk(ctx, &src, func(ctx context.Context, curObj StructWalkObject, field StructWalkField, path []string) error {
+		visited = append(visited, field.Name())
+		if field.Name() == "B" {
+			return ErrWalkStop
+		}
+		return nil
+	})
+	assert.NoError(t, err) // ErrWalkStop is converted to nil by StructWalk
+	assert.Contains(t, visited, "A")
+	assert.Contains(t, visited, "B")
+	assert.NotContains(t, visited, "C")
+}
+
+func TestWalkWithPathExtractor(t *testing.T) {
+	ctx := context.Background()
+
+	type Item struct {
+		Name  string `custom:"name_field"`
+		Value int    `custom:"value_field"`
+	}
+
+	src := Item{Name: "gocast", Value: 42}
+	collected := map[string]any{}
+
+	extractor := func(ctx context.Context, curObj StructWalkObject, field StructWalkField, path []string) string {
+		tag := field.Tag("custom")
+		if tag == "" {
+			return field.Name()
+		}
+		return tag
+	}
+
+	err := StructWalk(ctx, &src, func(ctx context.Context, curObj StructWalkObject, field StructWalkField, path []string) error {
+		name := extractor(ctx, curObj, field, path)
+		collected[name] = field.Value()
+		return nil
+	}, WalkWithPathExtractor(extractor))
+
+	assert.NoError(t, err)
+	assert.Equal(t, "gocast", collected["name_field"])
+	assert.Equal(t, 42, collected["value_field"])
+}
+
 func TestStructWalk(t *testing.T) {
 	ctx := context.Background()
 	emptyWalker := func(ctx context.Context, curObj StructWalkObject, field StructWalkField, path []string) error {

@@ -28,7 +28,10 @@ var (
 	ErrUnsupportedNumericType        = errors.New("unsupported numeric type")
 	ErrStructFieldNameUndefined      = errors.New("struct field name undefined")
 	ErrStructFieldValueCantBeChanged = errors.New("struct field value cant be changed")
-	ErrCopyCircularReference         = errors.New("circular reference detected during copy")
-	ErrCopyUnsupportedType           = errors.New("copy: unsupported type")
-	ErrCopyInvalidValue              = errors.New("copy: invalid value")
+	// Deprecated: ErrCopyCircularReference is never returned by the library;
+	// circular references are handled transparently via a visited-pointer map.
+	// This sentinel will be removed in v3.
+	ErrCopyCircularReference = errors.New("circular reference detected during copy")
+	ErrCopyUnsupportedType   = errors.New("copy: unsupported type")
+	ErrCopyInvalidValue      = errors.New("copy: invalid value")
 )

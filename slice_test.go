@@ -180,6 +180,27 @@ func TestToSlice(t *testing.T) {
 	}
 }
 
+func TestTrySlice(t *testing.T) {
+	t.Run("int to string", func(t *testing.T) {
+		res, err := TrySlice[string]([]int{1, 2, 3})
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"1", "2", "3"}, res)
+	})
+
+	t.Run("same type fast path", func(t *testing.T) {
+		src := []string{"a", "b"}
+		res, err := TrySlice[string](src)
+		assert.NoError(t, err)
+		assert.Equal(t, src, res)
+	})
+
+	t.Run("tags forwarded to cast", func(t *testing.T) {
+		res, err := TrySlice[string]([]float64{1.5, 2.5}, "json")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"1.5", "2.5"}, res)
+	})
+}
+
 func TestIsSlice(t *testing.T) {
 	assert.True(t, IsSlice([]int{}))
 	assert.True(t, IsSlice([]bool{}))

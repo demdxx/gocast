@@ -72,6 +72,51 @@ func TestMap(t *testing.T) {
 	assert.Equal(t, true, reflect.DeepEqual(nilMap, target8))
 }
 
+func TestToMapFrom(t *testing.T) {
+	t.Run("struct to map[any]any", func(t *testing.T) {
+		type Item struct{ Name string }
+		src := Item{Name: "hello"}
+		m, err := ToMapFrom(src, false)
+		assert.NoError(t, err)
+		assert.Equal(t, "hello", m["Name"])
+	})
+
+	t.Run("map to map[any]any", func(t *testing.T) {
+		src := map[string]any{"key": "value"}
+		m, err := ToMapFrom(src, false)
+		assert.NoError(t, err)
+		assert.Equal(t, "value", m["key"])
+	})
+
+	t.Run("nil source returns error", func(t *testing.T) {
+		_, err := ToMapFrom(nil, false)
+		assert.ErrorIs(t, err, ErrInvalidParams)
+	})
+}
+
+func TestMapDestValueSlice(t *testing.T) {
+	// Regression test: mapDestValue must not produce a double-length slice
+	// (was: make([]any, n) + append → 2n elements, first half nil).
+	type Row struct{ ID int }
+	src := map[any]any{
+		"rows": []Row{{ID: 1}, {ID: 2}},
+	}
+	dst := map[any]any{}
+	err := ToMap(&dst, src, true)
+	assert.NoError(t, err)
+
+	rows, ok := dst["rows"]
+	assert.True(t, ok, "rows key must be present")
+	if ok {
+		list, ok2 := rows.([]any)
+		assert.True(t, ok2, "rows must be []any")
+		if ok2 {
+			// Before the fix this would be 4 elements (2 nil + 2 real).
+			assert.Equal(t, 2, len(list), "slice length must equal source length, not 2×")
+		}
+	}
+}
+
 func TestIsMap(t *testing.T) {
 	tests := []struct {
 		src any

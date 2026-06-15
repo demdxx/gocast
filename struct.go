@@ -27,8 +27,6 @@ import (
 )
 
 // TryCopyStruct convert any input type into the target structure
-//
-//go:inline
 func TryCopyStruct(dst, src any, tags ...string) (err error) {
 	return TryCopyStructContext(context.Background(), dst, src, tags...)
 }
@@ -37,7 +35,7 @@ func TryCopyStruct(dst, src any, tags ...string) (err error) {
 func TryCopyStructContext(ctx context.Context, dst, src any, tags ...string) (err error) {
 	if dst == nil || src == nil {
 		if dst == nil {
-			return wrapError(ErrInvalidParams, "TryCopyStructContext `destenation` parameter is nil")
+			return wrapError(ErrInvalidParams, "TryCopyStructContext `destination` parameter is nil")
 		}
 		return wrapError(ErrInvalidParams, "TryCopyStructContext `source` parameter is nil")
 	}
@@ -111,7 +109,7 @@ func TryCopyStructContext(ctx context.Context, dst, src any, tags ...string) (er
 				if !ok {
 					if vl, err = TryToTypeContext(ctx, v, field.Type(), tags...); err == nil {
 						val := reflect.ValueOf(vl)
-						if val.Kind() == reflect.Ptr && val.Kind() != field.Kind() {
+						if val.Kind() == reflect.Ptr && field.Kind() != reflect.Ptr {
 							val = val.Elem()
 						}
 						err = setFieldValueReflect(ctx, field, val)
@@ -130,15 +128,11 @@ func TryCopyStructContext(ctx context.Context, dst, src any, tags ...string) (er
 }
 
 // Struct convert any input type into the target structure
-//
-//go:inline
 func Struct[R any](src any, tags ...string) (R, error) {
 	return StructContext[R](context.Background(), src, tags...)
 }
 
 // StructContext convert any input type into the target structure
-//
-//go:inline
 func StructContext[R any](ctx context.Context, src any, tags ...string) (R, error) {
 	var res R
 	err := TryCopyStructContext(ctx, &res, src, tags...)
@@ -194,7 +188,7 @@ func ReflectStructAllFieldNamesContext(ctx context.Context, t reflect.Type, tags
 	fields := make(map[string][]string, t.NumField())
 	for i := 0; i < t.NumField(); i++ {
 		tfield := t.Field(i)
-		if fnames := filedNameAndTags(tfield, tags...); len(fnames) > 0 {
+		if fnames := fieldNameAndTags(tfield, tags...); len(fnames) > 0 {
 			fields[tfield.Name] = fnames
 		}
 	}
@@ -213,8 +207,6 @@ func StructFieldTags(st any, tag string) map[string]string {
 }
 
 // StructFieldTagsUnsorted returns field names and tag targets separately
-//
-//go:inline
 func StructFieldTagsUnsorted(st any, tag string) ([]string, []string) {
 	return ReflectStructFieldTagsUnsorted(reflectTarget(reflect.ValueOf(st)).Type(), tag)
 }
@@ -265,8 +257,6 @@ func ReflectStructFields(t reflect.Type) []reflect.StructField {
 }
 
 // StructFieldValue returns the value of the struct field
-//
-//go:inline
 func StructFieldValue(st any, names ...string) (any, error) {
 	structVal := reflectTarget(reflect.ValueOf(st))
 	return ReflectStructFieldValue(structVal, names...)
@@ -300,8 +290,6 @@ func SetStructFieldValue(ctx context.Context, st any, name string, value any) (e
 }
 
 // IsStruct returns true if the value is a struct
-//
-//go:inline
 func IsStruct(v any) bool {
 	return v != nil && reflect.TypeOf(v).Kind() == reflect.Struct
 }
@@ -347,7 +335,7 @@ func setFieldValueNoCastSetter(ctx context.Context, field reflect.Value, value a
 		} else if len(autoCast) > 0 && autoCast[0] {
 			if nval, err := ReflectTryToTypeContext(ctx, vl, field.Type(), true); err == nil {
 				val := reflect.ValueOf(nval)
-				if val.Kind() == reflect.Ptr && val.Kind() != field.Kind() {
+				if val.Kind() == reflect.Ptr && field.Kind() != reflect.Ptr {
 					val = val.Elem()
 				}
 				field.Set(val)
@@ -478,7 +466,7 @@ func fieldTag(f reflect.StructField, tag string) string {
 	return f.Name
 }
 
-func filedNameAndTags(f reflect.StructField, tags ...string) []string {
+func fieldNameAndTags(f reflect.StructField, tags ...string) []string {
 	names := []string{f.Name}
 	if len(tags) == 0 {
 		return names

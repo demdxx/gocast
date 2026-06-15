@@ -1,7 +1,6 @@
 package gocast
 
 import (
-	"errors"
 	"reflect"
 )
 
@@ -36,8 +35,6 @@ func TryCopy[T any](src T) (T, error) {
 // Copy creates a deep copy of the provided value using reflection.
 // It returns a new value of the same type as the source.
 // If the source value is nil, it returns the zero value of the type.
-//
-//go:inline
 func Copy[T any](src T) T {
 	dst, err := TryCopy(src)
 	if err != nil {
@@ -61,8 +58,6 @@ func TryAnyCopy(src any) (any, error) {
 }
 
 // AnyCopy creates a deep copy of the provided value using reflection.
-//
-//go:inline
 func AnyCopy(src any) any {
 	dst, err := TryAnyCopy(src)
 	if err != nil {
@@ -146,7 +141,7 @@ func deepCopy(src, dst reflect.Value, visited map[uintptr]reflect.Value) error {
 	case reflect.Map:
 		return copyMap(src, dst, visited)
 	case reflect.Chan, reflect.Func:
-		return errors.New("unsupported type: " + src.Type().String())
+		return wrapError(ErrCopyUnsupportedType, src.Type().String())
 	default:
 		// For other types, try direct assignment
 		if dst.CanSet() {
@@ -403,34 +398,48 @@ func copyMapWithOptions(src, dst reflect.Value, visited map[uintptr]reflect.Valu
 	return nil
 }
 
-// CopySlice creates a deep copy of a slice
+// CopySlice creates a deep copy of a slice.
+// It panics if any element cannot be copied.
 func CopySlice[T any](src []T) []T {
 	if src == nil {
 		return nil
 	}
 	dst := make([]T, len(src))
 	for i, v := range src {
-		copied, _ := TryCopy(v)
+		copied, err := TryCopy(v)
+		if err != nil {
+			panic(err)
+		}
 		dst[i] = copied
 	}
 	return dst
 }
 
-// CopyMap creates a deep copy of a map
+// CopyMap creates a deep copy of a map.
+// It panics if any key or value cannot be copied.
 func CopyMap[K comparable, V any](src map[K]V) map[K]V {
 	if src == nil {
 		return nil
 	}
 	dst := make(map[K]V, len(src))
 	for k, v := range src {
-		copiedKey, _ := TryCopy(k)
-		copiedValue, _ := TryCopy(v)
+		copiedKey, err := TryCopy(k)
+		if err != nil {
+			panic(err)
+		}
+		copiedValue, err := TryCopy(v)
+		if err != nil {
+			panic(err)
+		}
 		dst[copiedKey] = copiedValue
 	}
 	return dst
 }
 
-// MustCopy is like TryCopy but panics on error
+// MustCopy is like TryCopy but panics on error.
+//
+// Deprecated: MustCopy is identical to Copy; prefer Copy for clarity.
+// MustCopy will be removed in v3.
 func MustCopy[T any](src T) T {
 	dst, err := TryCopy(src)
 	if err != nil {
@@ -439,7 +448,11 @@ func MustCopy[T any](src T) T {
 	return dst
 }
 
-// ShallowCopy creates a shallow copy (for performance when deep copy is not needed)
+// ShallowCopy creates a shallow copy (for performance when deep copy is not needed).
+//
+// Deprecated: ShallowCopy is a no-op identity function (returns src unchanged)
+// and therefore misleadingly named. Assign the value directly if a shallow copy
+// is intended. ShallowCopy will be removed in v3.
 func ShallowCopy[T any](src T) T {
 	return src
 }

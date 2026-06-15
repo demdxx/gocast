@@ -1,6 +1,8 @@
 package gocast
 
 import (
+	"context"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -69,5 +71,81 @@ func TestCast(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, testStruct, newStruct)
 		}
+	})
+}
+
+func TestTryTo(t *testing.T) {
+	t.Run("basic conversion", func(t *testing.T) {
+		var target int
+		v, err := TryTo(42.5, target)
+		assert.NoError(t, err)
+		assert.Equal(t, 42, v)
+	})
+
+	t.Run("nil input returns nil", func(t *testing.T) {
+		v, err := TryTo(nil, 0)
+		assert.NoError(t, err)
+		assert.Nil(t, v)
+	})
+
+	t.Run("To swallows error", func(t *testing.T) {
+		v := To("hello", 0)
+		assert.Equal(t, 0, v)
+	})
+
+	t.Run("context variant", func(t *testing.T) {
+		v, err := TryToContext(context.Background(), "99", 0)
+		assert.NoError(t, err)
+		assert.Equal(t, 99, v)
+	})
+}
+
+func TestReflectTryToType(t *testing.T) {
+	t.Run("string to int via reflect", func(t *testing.T) {
+		v, err := ReflectTryToType(reflect.ValueOf("7"), reflect.TypeOf(0), false)
+		assert.NoError(t, err)
+		assert.Equal(t, 7, v)
+	})
+
+	t.Run("ReflectToType returns nil for slice target on error", func(t *testing.T) {
+		// A chan cannot be converted to []int — expect nil result
+		v := ReflectToType(reflect.ValueOf(make(chan int)), reflect.TypeOf([]int{}))
+		assert.Nil(t, v)
+	})
+
+	t.Run("ReflectToTypeContext returns nil for slice target on error", func(t *testing.T) {
+		v := ReflectToTypeContext(context.Background(), reflect.ValueOf(make(chan int)), reflect.TypeOf([]int{}))
+		assert.Nil(t, v)
+	})
+}
+
+func TestTryCastValue(t *testing.T) {
+	t.Run("non-recursive int", func(t *testing.T) {
+		v, err := TryCastValue[int]("55", false)
+		assert.NoError(t, err)
+		assert.Equal(t, 55, v)
+	})
+
+	t.Run("context variant", func(t *testing.T) {
+		v, err := TryCastValueContext[string](context.Background(), 123, false)
+		assert.NoError(t, err)
+		assert.Equal(t, "123", v)
+	})
+}
+
+func TestTryCastRecursive(t *testing.T) {
+	type Inner struct{ X int }
+	src := map[string]any{"X": 7}
+
+	t.Run("struct from map recursive", func(t *testing.T) {
+		v, err := TryCastRecursive[Inner](src, "json")
+		assert.NoError(t, err)
+		assert.Equal(t, 7, v.X)
+	})
+
+	t.Run("context variant", func(t *testing.T) {
+		v, err := TryCastRecursiveContext[Inner](context.Background(), src)
+		assert.NoError(t, err)
+		assert.Equal(t, 7, v.X)
 	})
 }

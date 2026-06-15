@@ -24,14 +24,12 @@ import (
 	"reflect"
 )
 
-// TrySlice converts one type of array to other or resturns error
-//
-//go:inline
+// TrySlice converts one type of array to other or returns error
 func TrySlice[R any, S any](src []S, tags ...string) (res []R, err error) {
 	return TrySliceContext[R](context.Background(), src, tags...)
 }
 
-// TrySliceContext converts one type of array to other or resturns error
+// TrySliceContext converts one type of array to other or returns error
 func TrySliceContext[R any, S any](ctx context.Context, src []S, tags ...string) (res []R, err error) {
 	res = make([]R, len(src))
 	switch srcArr := any(src).(type) {
@@ -40,7 +38,7 @@ func TrySliceContext[R any, S any](ctx context.Context, src []S, tags ...string)
 	default:
 		for i, v := range src {
 			var newVal R
-			if newVal, err = TryCastContext[R](ctx, v); err != nil {
+			if newVal, err = TryCastContext[R](ctx, v, tags...); err != nil {
 				return nil, err
 			} else {
 				res[i] = newVal
@@ -50,14 +48,12 @@ func TrySliceContext[R any, S any](ctx context.Context, src []S, tags ...string)
 	return res, nil
 }
 
-// Slice converts one type of array to other or resturns nil if not compatible
-//
-//go:inline
+// Slice converts one type of array to other or returns nil if not compatible
 func Slice[R any, S any](src []S, tags ...string) []R {
 	return SliceContext[R](context.Background(), src, tags...)
 }
 
-// SliceContext converts one type of array to other or resturns nil if not compatible
+// SliceContext converts one type of array to other or returns nil if not compatible
 func SliceContext[R any, S any](ctx context.Context, src []S, tags ...string) []R {
 	res, _ := TrySliceContext[R](ctx, src, tags...)
 	return res
@@ -88,8 +84,6 @@ func AnySliceContext[R any](ctx context.Context, src any, tags ...string) []R {
 }
 
 // TryToAnySlice converts any input slice into destination type slice
-//
-//go:inline
 func TryToAnySlice(dst, src any, tags ...string) error {
 	return TryToAnySliceContext(context.Background(), dst, src, tags...)
 }
@@ -98,14 +92,14 @@ func TryToAnySlice(dst, src any, tags ...string) error {
 func TryToAnySliceContext(ctx context.Context, dst, src any, tags ...string) error {
 	if dst == nil || src == nil {
 		if dst == nil {
-			return wrapError(ErrInvalidParams, "TryToAnySliceContext `destenation` parameter is nil")
+			return wrapError(ErrInvalidParams, "TryToAnySliceContext `destination` parameter is nil")
 		}
 		return wrapError(ErrInvalidParams, "TryToAnySliceContext `source` parameter is nil")
 	}
 
 	dstSlice := reflectTarget(reflect.ValueOf(dst))
 	if k := dstSlice.Kind(); k != reflect.Slice && k != reflect.Array {
-		return wrapError(ErrInvalidParams, "TryToAnySliceContext `destenation` parameter is not a slice or array")
+		return wrapError(ErrInvalidParams, "TryToAnySliceContext `destination` parameter is not a slice or array")
 	}
 
 	srcSlice := reflectTarget(reflect.ValueOf(src))

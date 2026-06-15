@@ -237,6 +237,39 @@ func TestIsStruct(t *testing.T) {
 	assert.False(t, IsStruct(1))
 }
 
+func TestReflectStructAllFieldNames(t *testing.T) {
+	type Child struct {
+		Code string `json:"code" field:"c"`
+	}
+	type Parent struct {
+		Name  string `json:"name" field:"n"`
+		Age   int    `json:"age"`
+		child Child  // unexported field — should be included in result
+	}
+
+	t.Run("with json tag", func(t *testing.T) {
+		names := ReflectStructAllFieldNames(reflect.TypeOf(Parent{}), "json")
+		assert.NotEmpty(t, names)
+		if assert.Contains(t, names, "Name") {
+			assert.Contains(t, names["Name"], "name")
+		}
+		if assert.Contains(t, names, "Age") {
+			assert.Contains(t, names["Age"], "age")
+		}
+	})
+
+	t.Run("non-struct returns nil", func(t *testing.T) {
+		assert.Nil(t, ReflectStructAllFieldNames(reflect.TypeOf(0)))
+	})
+
+	t.Run("multiple tags", func(t *testing.T) {
+		names := ReflectStructAllFieldNames(reflect.TypeOf(Parent{}), "json", "field")
+		if assert.Contains(t, names, "Name") {
+			assert.Contains(t, names["Name"], "n")
+		}
+	})
+}
+
 func BenchmarkGetSetFieldValue(b *testing.B) {
 	st := &struct{ Name string }{}
 	ctx := context.TODO()

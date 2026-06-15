@@ -1,6 +1,10 @@
 package gocast
 
 // Any is a type alias for interface{} and type converting functionally.
+//
+// Deprecated: Any has no exported constructor and duplicates the top-level
+// conversion functions (Str, Int, Bool, etc.). Use the top-level functions
+// directly. Any will be removed in v3.
 type Any struct {
 	v any
 }

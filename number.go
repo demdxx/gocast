@@ -3,13 +3,14 @@ package gocast
 import (
 	"strconv"
 	"strings"
-
-	"golang.org/x/exp/constraints"
 )
 
-// Numeric data type
+// Numeric is the constraint satisfied by all integer and floating-point types.
+// It replaces the former dependency on golang.org/x/exp/constraints.
 type Numeric interface {
-	constraints.Integer | constraints.Float
+	~int | ~int8 | ~int16 | ~int32 | ~int64 |
+		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr |
+		~float32 | ~float64
 }
 
 // TryNumber converts from types which could be numbers
@@ -101,22 +102,22 @@ func IsNumericStr(s string) bool {
 // IsNumeric10Str returns true if input string is a numeric in base 10
 func IsNumeric10Str(s string) bool {
 	dot := false
-	esimbol := -1
+	eSymbol := -1
 	isStart := false
 	for i, c := range s {
 		if c < '0' || c > '9' {
-			if c == '.' && !dot && esimbol == -1 {
+			if c == '.' && !dot && eSymbol == -1 {
 				dot = true
 				continue
 			}
 			if i == 0 && (c == '-' || c == '+') {
 				continue
 			}
-			if (c == 'e' || c == 'E') && isStart && esimbol == -1 {
-				esimbol = i
+			if (c == 'e' || c == 'E') && isStart && eSymbol == -1 {
+				eSymbol = i
 				continue
 			}
-			if esimbol != -1 && (c == '-' || c == '+') && esimbol == i-1 {
+			if eSymbol != -1 && (c == '-' || c == '+') && eSymbol == i-1 {
 				continue
 			}
 			return false
@@ -124,7 +125,7 @@ func IsNumeric10Str(s string) bool {
 			isStart = true
 		}
 	}
-	return isStart && esimbol != len(s)-1
+	return isStart && eSymbol != len(s)-1
 }
 
 // IsNumericOnlyStr returns true if input string is a numeric only

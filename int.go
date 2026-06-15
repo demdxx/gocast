@@ -67,7 +67,10 @@ func ReflectToInt64(v reflect.Value) int64 {
 	return 0
 }
 
-// ToUint64ByReflect returns uint64 from reflection
+// ToUint64ByReflect returns uint64 from reflection.
+//
+// Deprecated: Use ReflectToUint64 for a name consistent with ReflectToInt64
+// and ReflectToFloat64. ToUint64ByReflect will be removed in v3.
 func ToUint64ByReflect(v reflect.Value) uint64 {
 	switch v.Kind() {
 	case reflect.String:
@@ -108,52 +111,38 @@ func ToUint64ByReflect(v reflect.Value) uint64 {
 	return 0
 }
 
+// ReflectToUint64 returns uint64 from a reflection value.
+// It is the named-consistently replacement for the deprecated ToUint64ByReflect.
+func ReflectToUint64(v reflect.Value) uint64 {
+	return ToUint64ByReflect(v)
+}
+
 // Int from any other basic type
-//
-//go:inline
 func Int(v any) int { return Number[int](v) }
 
 // Int8 from any other basic type
-//
-//go:inline
 func Int8(v any) int8 { return Number[int8](v) }
 
 // Int16 from any other basic type
-//
-//go:inline
 func Int16(v any) int16 { return Number[int16](v) }
 
 // Int32 from any other basic type
-//
-//go:inline
 func Int32(v any) int32 { return Number[int32](v) }
 
 // Int64 from any other basic type
-//
-//go:inline
 func Int64(v any) int64 { return Number[int64](v) }
 
 // Uint from any other basic type
-//
-//go:inline
 func Uint(v any) uint { return Number[uint](v) }
 
 // Uint8 from any other basic type
-//
-//go:inline
 func Uint8(v any) uint8 { return Number[uint8](v) }
 
 // Uint16 from any other basic type
-//
-//go:inline
 func Uint16(v any) uint16 { return Number[uint16](v) }
 
 // Uint32 from any other basic type
-//
-//go:inline
 func Uint32(v any) uint32 { return Number[uint32](v) }
 
 // Uint64 from any other basic type
-//
-//go:inline
 func Uint64(v any) uint64 { return Number[uint64](v) }

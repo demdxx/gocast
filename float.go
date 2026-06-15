@@ -53,23 +53,20 @@ func ReflectToFloat64(v reflect.Value) float64 {
 	return 0.
 }
 
-// Float from any other basic type, float64 by default
+// Float from any other basic type, float64 by default.
 //
-//go:inline
+// Deprecated: Float is an alias for Float64. Use Float64 directly for
+// consistency with the rest of the API. Float will be removed in v3.
 func Float(v any) float64 {
 	return Number[float64](v)
 }
 
 // Float64 from any other basic type
-//
-//go:inline
 func Float64(v any) float64 {
 	return Number[float64](v)
 }
 
 // Float32 from any other basic type
-//
-//go:inline
 func Float32(v any) float32 {
 	return Number[float32](v)
 }

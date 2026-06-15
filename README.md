@@ -1,113 +1,127 @@
 # GoCast
 
-[![GoDoc](https://godoc.org/github.com/demdxx/gocast?status.svg)](https://godoc.org/github.com/demdxx/gocast)
+[![GoDoc](https://pkg.go.dev/badge/github.com/demdxx/gocast/v2.svg)](https://pkg.go.dev/github.com/demdxx/gocast/v2)
 [![Build Status](https://github.com/demdxx/gocast/workflows/Tests/badge.svg)](https://github.com/demdxx/gocast/actions?workflow=Tests)
-[![Go Report Card](https://goreportcard.com/badge/github.com/demdxx/gocast)](https://goreportcard.com/report/github.com/demdxx/gocast)
+[![Go Report Card](https://goreportcard.com/badge/github.com/demdxx/gocast/v2)](https://goreportcard.com/report/github.com/demdxx/gocast/v2)
 [![Coverage Status](https://coveralls.io/repos/github/demdxx/gocast/badge.svg?branch=master)](https://coveralls.io/github/demdxx/gocast?branch=master)
 
-## Introduction
+GoCast is a Go library for runtime type conversion, deep copying, and struct/map
+manipulation using reflection and generics. It is designed for scenarios where
+data arrives as `any` — from JSON decoding, configuration files, ORM rows, or
+dynamic APIs — and must be coerced into concrete Go types without boilerplate.
 
-GoCast is a powerful Go library that allows you to easily convert between different basic types in a consistent and efficient way. Whether you need to convert strings, numbers, or perform deep copying of complex data structures, GoCast has got you covered.
-
-### ✨ Latest Improvements
-
-- **🚀 Enhanced Deep Copy**: Advanced deep copying with circular reference detection and custom options
-- **🎯 Type-Safe Functions**: Specialized `CopySlice[T]()` and `CopyMap[K,V]()` functions with better performance
-- **⚙️ Flexible Options**: `CopyOptions` for controlling copy behavior (depth limits, field filtering)
-- **🔧 Better Architecture**: Modular design with improved error handling and edge case support
-- **📈 Performance**: Optimized paths for different data types with minimal memory allocations
+**Requires Go 1.21+**
 
 ## Features
 
-- **Universal Type Casting**: GoCast provides a set of methods for universal type casting, making it easy to convert data between various types.
-- **Deep Copy Operations**: Advanced deep copying with support for circular references, custom options, and type-safe specialized functions.
-- **Struct Field Manipulation**: GoCast allows you to set and retrieve values of struct fields dynamically, making it a valuable tool for working with complex data structures.
-- **Custom Type Support**: You can define custom types and implement your own conversion logic, giving you full control over how data is cast.
-- **High Performance**: Optimized for speed with specialized paths for different data types and minimal allocations.
+- **Universal type casting** — `Cast[T]`, `TryCast[T]`, `Number[T]`, `Str`, `Bool` and their `Context` / `Try` variants
+- **Deep copy** — circular-reference–safe `TryCopy`, `Copy`; advanced `TryCopyWithOptions` with depth and field-filter controls
+- **Struct mapping** — populate a struct from a map or another struct using struct-tag–driven field resolution (`json`, `field`, `sql`, …)
+- **Map conversion** — convert structs and maps into typed `map[K]V` with optional recursive field processing
+- **Struct walking** — `StructWalk` visits every field recursively with full path tracking
+- **Custom types** — implement `CastSetter` for full control over how a type is populated
 
 ## Installation
 
-To use GoCast in your Go project, simply import it:
-
-```go
-import "github.com/demdxx/gocast/v2"
+```sh
+go get github.com/demdxx/gocast/v2
 ```
 
-## Usage Example
+```go
+import gocast "github.com/demdxx/gocast/v2"
+```
 
-Here are some examples of how you can use GoCast:
+## Quick Start
 
 ```go
-// Example string casting:
-gocast.Str("strasstr")           // "strasstr"
+// String conversion
 gocast.Str(8)                    // "8"
 gocast.Str(8.31)                 // "8.31"
-gocast.Str([]byte("one time"))   // "one time"
+gocast.Str([]byte("hello"))      // "hello"
 gocast.Str(nil)                  // ""
 
-// Example number casting:
-gocast.Number[int](8)            // 8
+// Numeric conversion (fast — no reflection for common types)
 gocast.Number[int](8.31)         // 8
 gocast.Number[int]("8")          // 8
 gocast.Number[int](true)         // 1
-gocast.Number[int](false)        // 0
-
-var eight any = 8
-gocast.Number[int](eight)        // 8
-gocast.Cast[int](eight)          // 8
-gocast.Number[int](nil)          // 0
-
-// Number converts only into numeric values (simpler and faster then Cast)
 gocast.Number[float32]("2.12")   // 2.12
 
-// Cast converts any type to any other type
+// Generic cast (handles struct ↔ map conversions too)
+var v any = 8
+gocast.Cast[int](v)              // 8
 gocast.Cast[float64]("2.")       // 2.0
 
-val, err := gocast.TryCast[int]("123.2") // 123, <nil>
+val, err := gocast.TryCast[int]("123.2") // 123, nil
 
-res := gocast.Map[string, any](struct{ID int64}{ID: 1}) // map[string]any{"ID": 1}
+// Struct → map
+res := gocast.Map[string, any](struct{ ID int64 }{ID: 1})
+// map[string]any{"ID": int64(1)}
 
-gocast.Copy(map[string]any{"ID": 1}) // map[string]any{"ID": 1}
+// Deep copy
+copied, err := gocast.TryCopy(map[string]any{"key": []int{1, 2, 3}})
 ```
 
+## Type Conversion
+
+Functions follow a consistent naming convention:
+
+| Pattern | Behaviour |
+|---------|-----------|
+| `TryX(v)` | Returns `(T, error)` |
+| `X(v)` | Returns `T`, zero value on error |
+| `XContext(ctx, v)` | Same as above, passes context to `CastSetter` hooks |
+
 ```go
-func sumAll(vals ...any) int {
-  var result int = 0
-  for _, v := range vals {
-    result += gocast.Number[int](v)
-  }
-  return result
-}
+// All return (T, error)
+val, err := gocast.TryCast[int](src)
+val, err := gocast.TryCastContext[int](ctx, src, "json")
+val, err := gocast.TryNumber[float64](src)
+val, err := gocast.TryStr(src)
+
+// All return T (zero on error)
+gocast.Cast[int](src)
+gocast.Number[float64](src)
+gocast.Str(src)
+gocast.Bool(src)
+gocast.Int(src)
+gocast.Int64(src)
+gocast.Float64(src)
 ```
 
-## Deep Copy Operations
+## Deep Copy
 
-GoCast provides powerful deep copying capabilities with support for complex data structures:
+`TryCopy` handles circular references automatically via a visited-pointer map.
 
 ```go
-// Basic deep copy
-original := map[string]any{"data": []int{1, 2, 3}}
+// Returns (T, error)
 copied, err := gocast.TryCopy(original)
 
-// Type-safe specialized functions
-originalSlice := []int{1, 2, 3, 4, 5}
-copiedSlice := gocast.CopySlice(originalSlice)
+// Panics on error — use when the input type is known to be safe
+copied := gocast.Copy(original)
 
-originalMap := map[string]int{"a": 1, "b": 2}
-copiedMap := gocast.CopyMap(originalMap)
+// Type-safe helpers for slices and maps
+copiedSlice := gocast.CopySlice([]int{1, 2, 3})
+copiedMap   := gocast.CopyMap(map[string]int{"a": 1})
 
-// Copy with panic on error
-result := gocast.MustCopy(complexStruct)
+// Copy any interface value with type preservation
+copied, err := gocast.TryAnyCopy(src)
+copied       = gocast.AnyCopy(src)
+```
 
-// Copy with custom options
+### Copy with options
+
+```go
 opts := gocast.CopyOptions{
-    MaxDepth: 5,                     // Limit recursion depth
-    IgnoreUnexportedFields: true,    // Skip unexported fields
-    IgnoreCircularRefs: false,       // Handle circular references
+    MaxDepth:               5,     // zero means unlimited
+    IgnoreUnexportedFields: true,  // skip unexported struct fields
+    IgnoreCircularRefs:     false, // false = preserve cycle, true = break cycle
 }
 copied, err := gocast.TryCopyWithOptions(original, opts)
+```
 
-// Circular reference handling
+### Circular reference example
+
+```go
 type Node struct {
     Value int
     Next  *Node
@@ -115,171 +129,294 @@ type Node struct {
 node1 := &Node{Value: 1}
 node2 := &Node{Value: 2}
 node1.Next = node2
-node2.Next = node1  // Circular reference
+node2.Next = node1 // cycle
 
-copiedNode, err := gocast.TryCopy(node1) // Handles circular refs automatically
+// TryCopy preserves the cycle in the copy
+copied, err := gocast.TryCopy(node1)
+// copied.Next.Next == copied  ✓
 ```
 
-## Struct Field Manipulation
-
-GoCast also allows you to work with struct fields dynamically:
+## Struct Mapping
 
 ```go
 type User struct {
-  ID    uint64
-  Email string
+    ID    uint64 `json:"id"`
+    Email string `json:"email"`
 }
 
-var user User
+// Populate from a map (tag-driven key resolution)
+var u User
+err := gocast.TryCopyStruct(&u, map[string]any{"id": 19, "email": "user@example.com"}, "json")
 
-// Set structure values
-err := gocast.SetStructFieldValue(&user, "ID", uint64(19))
-err := gocast.SetStructFieldValue(&user, "Email", "iamawesome@mail.com")
-
-id, err := gocast.StructFieldValue(user, "ID")
-email, err := gocast.StructFieldValue(user, "Email")
-fmt.Printf("User: %d - %s", id, email)
-// > User: 19 - iamawesome@mail.com
+// Or use the generic helper
+u, err := gocast.Struct[User](map[string]any{"id": 19, "email": "user@example.com"}, "json")
 ```
 
-## Custom Type Support
-
-You can define and use custom types with GoCast:
+### Individual field access
 
 ```go
-// Define custom type
+// Get
+id, err := gocast.StructFieldValue(u, "ID")
+
+// Set
+err := gocast.SetStructFieldValue(context.Background(), &u, "ID", uint64(19))
+err  = gocast.SetStructFieldValue(context.Background(), &u, "Email", "user@example.com")
+```
+
+## Map Conversion
+
+```go
+type Product struct {
+    ID    int64  `json:"id"`
+    Title string `json:"title"`
+}
+
+src := Product{ID: 1, Title: "Gopher Plush"}
+
+// Struct → map[string]any using json tags
+m := gocast.Map[string, any](src, "json")
+// map[string]any{"id": int64(1), "title": "Gopher Plush"}
+
+// With recursive nested struct conversion
+m, err := gocast.TryMapRecursive[string, any](src, "json")
+
+// Map → map with key/value type conversion
+m2 := gocast.Map[string, string](map[int]int{1: 2})
+// map[string]string{"1": "2"}
+```
+
+## Struct Walking
+
+`StructWalk` visits every exported field recursively. It is useful for populating
+structs from external sources (env vars, INI files, config maps).
+
+```go
+err := gocast.StructWalk(ctx, &cfg, func(
+    ctx    context.Context,
+    obj    gocast.StructWalkObject,
+    field  gocast.StructWalkField,
+    path   []string,
+) error {
+    // path is the list of parent field names leading to this field
+    key := strings.Join(append(path, field.Name()), ".")
+    if v, ok := source[key]; ok {
+        return field.SetValue(ctx, v)
+    }
+    return nil
+})
+
+// Use a struct tag to name path segments
+err = gocast.StructWalk(ctx, &cfg, walker, gocast.WalkWithPathTag("json"))
+
+// Or a custom function
+err = gocast.StructWalk(ctx, &cfg, walker, gocast.WalkWithPathExtractor(
+    func(ctx context.Context, obj gocast.StructWalkObject, field gocast.StructWalkField, path []string) string {
+        return strings.ToLower(field.Name())
+    },
+))
+```
+
+Return `gocast.ErrWalkSkip` from the walker to skip nested fields of a struct.
+Return `gocast.ErrWalkStop` to stop the walk entirely (converted to `nil` by `StructWalk`).
+
+## Custom Types
+
+Implement `CastSetter` to control how a type is populated during struct mapping
+or slice/map conversion:
+
+```go
 type Money int64
 
 func (m *Money) CastSet(ctx context.Context, v any) error {
-  switch val := v.(type) {
-  case Money:
-    *m = val
-  default:
-    *m = Money(gocast.Float64(v) * 1000000)
-  }
-  return nil
+    switch val := v.(type) {
+    case Money:
+        *m = val
+    default:
+        *m = Money(gocast.Float64(v) * 1_000_000)
+    }
+    return nil
 }
 
-// Use custom type in structs
-type Car struct {
-  ID int64
-  Price Money
+type Order struct {
+    ID    int64
+    Total Money
 }
 
-var car Car
+var order Order
+err := gocast.TryCopyStruct(&order, map[string]any{
+    "ID":    1,
+    "Total": "12000.00",
+})
+// order.Total == 12_000_000_000
+```
 
-// Mapping values into struct
-gocast.TryCopyStruct(&car, map[string]any{"ID":1, "Price": "12000.00"})
+## Error Handling
+
+```go
+// Try* variants — always return an error
+copied, err := gocast.TryCopy(v)
+val,    err := gocast.TryCast[int](v)
+
+// Non-Try variants — return zero value on error (never panic)
+val  := gocast.Cast[int](v)
+val  := gocast.Number[int](v)
+
+// Copy / CopySlice / CopyMap — panic on unsupported type (e.g. chan, func)
+copied := gocast.Copy(v)
+```
+
+Errors are wrapped and can be inspected with `errors.Is`:
+
+```go
+_, err := gocast.TryCast[int](make(chan int))
+errors.Is(err, gocast.ErrCopyUnsupportedType) // true
 ```
 
 ## Benchmarks
 
-Here are some benchmark results for GoCast:
+```
+goos: darwin / goarch: arm64 / cpu: Apple M2 Ultra
 
-```sh
-> go test -benchmem -v -race -bench=.
+BenchmarkBool-24                  20453542     58.87 ns/op      0 B/op   0 allocs/op
+BenchmarkToFloat-24               10951923    107.0  ns/op      0 B/op   0 allocs/op
+BenchmarkToInt-24                  9870794    121.1  ns/op      0 B/op   0 allocs/op
+BenchmarkToString-24                836929   1622    ns/op      5 B/op   0 allocs/op
 
-goos: darwin
-goarch: arm64
-pkg: github.com/demdxx/gocast/v2
-cpu: Apple M2 Ultra
+BenchmarkCopy/simple_int-24      100000000     10.03 ns/op      8 B/op   1 allocs/op
+BenchmarkCopy/simple_string-24    28639788     41.20 ns/op     32 B/op   2 allocs/op
+BenchmarkCopy/simple_struct-24    16650103     71.49 ns/op     48 B/op   2 allocs/op
+BenchmarkCopy/complex_struct-24    1796786    663.3  ns/op    632 B/op  18 allocs/op
+BenchmarkCopy/slice-24             5762702    205.5  ns/op    152 B/op   4 allocs/op
+BenchmarkCopy/map-24               1966965    607.1  ns/op    504 B/op  23 allocs/op
 
-# Core functionality benchmarks
-BenchmarkBool-24                        20453542           58.87 ns/op             0 B/op          0 allocs/op
-BenchmarkToFloat-24                     10951923          107.0 ns/op              0 B/op          0 allocs/op
-BenchmarkToInt-24                        9870794          121.1 ns/op              0 B/op          0 allocs/op
-BenchmarkToString-24                      836929         1622 ns/op        5 B/op          0 allocs/op
-
-# Deep copy benchmarks
-BenchmarkCopy/simple_int-24             100000000          10.03 ns/op       8 B/op           1 allocs/op
-BenchmarkCopy/simple_string-24           28639788          41.20 ns/op      32 B/op           2 allocs/op
-BenchmarkCopy/simple_struct-24           16650103          71.49 ns/op      48 B/op           2 allocs/op
-BenchmarkCopy/complex_struct-24           1796786         663.3 ns/op     632 B/op          18 allocs/op
-BenchmarkCopy/slice-24                    5762702         205.5 ns/op     152 B/op           4 allocs/op
-BenchmarkCopy/map-24                      1966965         607.1 ns/op     504 B/op          23 allocs/op
-
-# Specialized copy functions (type-safe and faster)
-BenchmarkSpecializedFunctions/CopySlice_specialized-24    9462444         124.9 ns/op     160 B/op          11 allocs/op
-BenchmarkSpecializedFunctions/CopyMap_specialized-24      2794791         427.3 ns/op     456 B/op          17 allocs/op
-
-# Other operations
-BenchmarkGetSetFieldValue/set-24         1000000         1021 ns/op       64 B/op           4 allocs/op
-BenchmarkGetSetFieldValue/get-24         1869465          643.8 ns/op      48 B/op           3 allocs/op
-BenchmarkParseTime-24                     374346         3130 ns/op      700 B/op          17 allocs/op
-BenchmarkIsEmpty-24                     37383031           31.23 ns/op       0 B/op           0 allocs/op
+BenchmarkIsEmpty-24               37383031     31.23 ns/op      0 B/op   0 allocs/op
+BenchmarkParseTime-24               374346   3130    ns/op    700 B/op  17 allocs/op
 ```
 
-### Performance Highlights
+Run benchmarks locally:
 
-- **Deep Copy**: Highly optimized with specialized functions for different types
-- **Type-Safe Copies**: `CopySlice` and `CopyMap` provide better performance for specific types
-- **Memory Efficient**: Minimal allocations for most operations
-- **Circular References**: Automatic detection and handling with zero performance cost for non-circular data
+```sh
+make bench
+```
 
 ## API Reference
 
-### Core Copy Functions
+### Type Conversion
 
 ```go
-// Basic deep copy with error handling
-func TryCopy[T any](src T) (T, error)
+func Cast[R, T any](v T, tags ...string) R
+func TryCast[R, T any](v T, tags ...string) (R, error)
+func CastContext[R, T any](ctx context.Context, v T, tags ...string) R
+func TryCastContext[R, T any](ctx context.Context, v T, tags ...string) (R, error)
 
-// Deep copy with panic on error
+func CastRecursive[R, T any](v T, tags ...string) R
+func TryCastRecursive[R, T any](v T, tags ...string) (R, error)
+
+func Number[R Numeric](v any) R
+func TryNumber[R Numeric](v any) (R, error)
+
+func Str(v any) string           // string conversion
+func Bool(v any) bool            // bool conversion
+func Int(v any) int              // integer helpers
+func Int8(v any) int8
+func Int16(v any) int16
+func Int32(v any) int32
+func Int64(v any) int64
+func Uint(v any) uint
+func Uint8(v any) uint8
+func Uint16(v any) uint16
+func Uint32(v any) uint32
+func Uint64(v any) uint64
+func Float64(v any) float64
+func Float32(v any) float32
+```
+
+### Deep Copy
+
+```go
+func TryCopy[T any](src T) (T, error)
 func Copy[T any](src T) T
 
-// Panic version of TryCopy
-func MustCopy[T any](src T) T
+func TryCopyWithOptions[T any](src T, opts CopyOptions) (T, error)
 
-// Copy any type (interface{})
+func CopySlice[T any](src []T) []T
+func CopyMap[K comparable, V any](src map[K]V) map[K]V
+
 func TryAnyCopy(src any) (any, error)
 func AnyCopy(src any) any
 ```
 
-### Specialized Copy Functions
+### Struct & Map
 
 ```go
-// Type-safe slice copying (40% faster than TryCopy for slices)
-func CopySlice[T any](src []T) []T
+func TryCopyStruct(dst, src any, tags ...string) error
+func Struct[R any](src any, tags ...string) (R, error)
 
-// Type-safe map copying (30% faster than TryCopy for maps)
-func CopyMap[K comparable, V any](src map[K]V) map[K]V
+func ToMap(dst, src any, recursive bool, tags ...string) error
+func Map[K comparable, V any](src any, tags ...string) map[K]V
+func TryMap[K comparable, V any](src any, tags ...string) (map[K]V, error)
+func MapRecursive[K comparable, V any](src any, tags ...string) map[K]V
+func TryMapRecursive[K comparable, V any](src any, tags ...string) (map[K]V, error)
+func ToMapFrom(src any, recursive bool, tags ...string) (map[any]any, error)
 
-// Shallow copy (for immutable data)
-func ShallowCopy[T any](src T) T
+func StructFieldValue(st any, names ...string) (any, error)
+func SetStructFieldValue(ctx context.Context, st any, name string, value any) error
+func StructFieldNames(st any, tag string) []string
+func StructFieldTags(st any, tag string) map[string]string
 
-// Interface copy with type preservation
-func CopyInterface(src any) (any, error)
+func StructWalk(ctx context.Context, v any, walker func(...) error, options ...WalkOption) error
+func WalkWithPathTag(tagName string) WalkOption
+func WalkWithPathExtractor(fn func(...) string) WalkOption
 ```
 
-### Advanced Copy Options
+### Utilities
 
 ```go
-type CopyOptions struct {
-    IgnoreUnexportedFields bool  // Skip unexported struct fields
-    MaxDepth               int   // Limit recursion depth
-    IgnoreCircularRefs     bool  // Ignore circular references instead of preserving them
-}
-
-// Copy with custom options
-func TryCopyWithOptions[T any](src T, opts CopyOptions) (T, error)
+func IsEmpty(v any) bool
+func IsNil(v any) bool
+func IsStr(v any) bool
+func IsSlice(v any) bool
+func IsMap(v any) bool
+func IsStruct(v any) bool
+func ParseTime(v string) (time.Time, error)
+func Or[T comparable](vals ...T) T
+func IfThen[T any](cond bool, a, b T) T
+func Ptr[T any](v T) *T
+func PtrAsValue[T any](v *T) T
 ```
 
-### Usage Recommendations
+### Errors
 
-- **For simple types**: Use `TryCopy` or `Copy` - they're optimized automatically
-- **For slices**: Use `CopySlice[T]()` for better type safety and performance
-- **For maps**: Use `CopyMap[K,V]()` for better type safety and performance  
-- **For complex nested data**: Use `TryCopyWithOptions` with `MaxDepth` to control resource usage
-- **For circular references**: `TryCopy` handles them automatically
-- **For performance-critical code**: Consider if deep copy is needed - immutable types don't require copying
+```go
+var ErrInvalidParams                 = errors.New("invalid params")
+var ErrUnsupportedType               = errors.New("unsupported destination type")
+var ErrUnsupportedSourceType         = errors.New("unsupported source type")
+var ErrUnsettableValue               = errors.New("can't set value")
+var ErrStructFieldNameUndefined      = errors.New("struct field name undefined")
+var ErrStructFieldValueCantBeChanged = errors.New("struct field value cant be changed")
+var ErrCopyUnsupportedType           = errors.New("copy: unsupported type")
+var ErrCopyInvalidValue              = errors.New("copy: invalid value")
+var ErrWalkSkip                      = errors.New("skip field walk")
+var ErrWalkStop                      = errors.New("stop field walk")
+```
 
-### Examples
+### Deprecated
 
-See the [examples directory](examples/) for more detailed usage examples and the [test files](.) for comprehensive usage patterns.
+The following identifiers are deprecated and will be removed in v3:
 
-### Documentation
+| Identifier | Replacement |
+|------------|-------------|
+| `MustCopy[T]` | `Copy[T]` |
+| `Float(v)` | `Float64(v)` |
+| `ToUint64ByReflect(v)` | `ReflectToUint64(v)` |
+| `ShallowCopy[T]` | direct assignment |
+| `Any` struct | top-level conversion functions |
+| `ErrCopyCircularReference` | _(never returned; remove usage)_ |
 
-Full API documentation is available at [GoDoc](https://godoc.org/github.com/demdxx/gocast/v2).
+## Examples
+
+See the [examples/](examples/) directory for runnable usage examples and the
+[test files](.) for comprehensive coverage of all API paths.
 
 ## License
 

@@ -54,8 +54,6 @@ func TryReflectStr(v reflect.Value) (string, error) {
 }
 
 // ReflectStr converts reflection value to string
-//
-//go:inline
 func ReflectStr(v reflect.Value) string {
 	s, _ := TryReflectStr(v)
 	return s
@@ -107,8 +105,6 @@ func TryStr(v any) (string, error) {
 }
 
 // Str returns string value from any type
-//
-//go:inline
 func Str(v any) string {
 	s, _ := TryStr(v)
 	return s

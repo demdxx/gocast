@@ -57,7 +57,7 @@ func TestCopy(t *testing.T) {
 	t.Run("map of string to int", func(t *testing.T) { testCopy(t, map[string]int{"a": 1, "b": 2}, nil) })
 	t.Run("struct value", func(t *testing.T) { testCopy(t, struct{ Name string }{Name: "test"}, nil) })
 	t.Run("unsupported type", func(t *testing.T) {
-		testCopy(t, make(chan int), errors.New("unsupported type: chan int"))
+		testCopy(t, make(chan int), errors.New("copy: unsupported type"))
 	})
 	t.Run("deeply nested struct", func(t *testing.T) {
 		src := Outer{Inner: Inner{
@@ -191,4 +191,148 @@ func TestCopyWithOptions(t *testing.T) {
 	dstSlice, err := TryCopyWithOptions(srcSlice, CopyOptions{})
 	assert.NoError(t, err)
 	assert.ElementsMatch(t, srcSlice, dstSlice)
+}
+
+func TestCopyOptionsMaxDepth(t *testing.T) {
+	type Inner struct{ Value int }
+	type Outer struct{ Inner Inner }
+
+	src := Outer{Inner: Inner{Value: 42}}
+
+	t.Run("no depth limit copies fully", func(t *testing.T) {
+		dst, err := TryCopyWithOptions(src, CopyOptions{MaxDepth: 0})
+		assert.NoError(t, err)
+		assert.Equal(t, src.Inner.Value, dst.Inner.Value)
+	})
+
+	t.Run("depth 1 zeroes nested struct", func(t *testing.T) {
+		dst, err := TryCopyWithOptions(src, CopyOptions{MaxDepth: 1})
+		assert.NoError(t, err)
+		// At depth=1 the outer struct is copied but its fields hit MaxDepth,
+		// so the nested Inner is set to zero.
+		assert.Equal(t, Inner{}, dst.Inner)
+	})
+}
+
+func TestCopyOptionsIgnoreUnexportedFields(t *testing.T) {
+	type mixed struct {
+		Exported   int
+		unexported int
+	}
+
+	src := mixed{Exported: 10, unexported: 99}
+
+	t.Run("without option copies exported fields only (unexported not settable)", func(t *testing.T) {
+		dst, err := TryCopyWithOptions(src, CopyOptions{})
+		assert.NoError(t, err)
+		assert.Equal(t, src.Exported, dst.Exported)
+	})
+
+	t.Run("IgnoreUnexportedFields copies exported fields", func(t *testing.T) {
+		dst, err := TryCopyWithOptions(src, CopyOptions{IgnoreUnexportedFields: true})
+		assert.NoError(t, err)
+		assert.Equal(t, src.Exported, dst.Exported)
+	})
+}
+
+func TestCopyArray(t *testing.T) {
+	src := [3]int{10, 20, 30}
+	dst, err := TryCopy(src)
+	assert.NoError(t, err)
+	assert.Equal(t, src, dst)
+
+	// Verify independence
+	dst[0] = 99
+	assert.Equal(t, 10, src[0])
+}
+
+func TestCopyArrayWithOptions(t *testing.T) {
+	src := [3]string{"a", "b", "c"}
+	dst, err := TryCopyWithOptions(src, CopyOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, src, dst)
+}
+
+func TestCopyMapWithOptions(t *testing.T) {
+	src := map[string]int{"x": 1, "y": 2}
+	dst, err := TryCopyWithOptions(src, CopyOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, src, dst)
+
+	// Verify independence
+	dst["x"] = 99
+	assert.Equal(t, 1, src["x"])
+}
+
+func TestCopyPublicHelpers(t *testing.T) {
+	t.Run("Copy panics on unsupported type", func(t *testing.T) {
+		assert.Panics(t, func() { Copy(make(chan int)) })
+	})
+
+	t.Run("Copy succeeds for struct", func(t *testing.T) {
+		type S struct{ V int }
+		src := S{V: 42}
+		dst := Copy(src)
+		assert.Equal(t, src, dst)
+	})
+
+	t.Run("MustCopy succeeds", func(t *testing.T) {
+		dst := MustCopy([]int{1, 2, 3})
+		assert.Equal(t, []int{1, 2, 3}, dst)
+	})
+
+	t.Run("MustCopy panics on unsupported type", func(t *testing.T) {
+		assert.Panics(t, func() { MustCopy(make(chan int)) })
+	})
+
+	t.Run("CopySlice basic", func(t *testing.T) {
+		src := []string{"a", "b", "c"}
+		dst := CopySlice(src)
+		assert.Equal(t, src, dst)
+		dst[0] = "z"
+		assert.Equal(t, "a", src[0])
+	})
+
+	t.Run("CopySlice nil returns nil", func(t *testing.T) {
+		assert.Nil(t, CopySlice[int](nil))
+	})
+
+	t.Run("CopySlice panics on unsupported element type", func(t *testing.T) {
+		assert.Panics(t, func() { CopySlice([]chan int{make(chan int)}) })
+	})
+
+	t.Run("CopyMap basic", func(t *testing.T) {
+		src := map[string]int{"a": 1}
+		dst := CopyMap(src)
+		assert.Equal(t, src, dst)
+		dst["a"] = 99
+		assert.Equal(t, 1, src["a"])
+	})
+
+	t.Run("CopyMap nil returns nil", func(t *testing.T) {
+		assert.Nil(t, CopyMap[string, int](nil))
+	})
+}
+
+func TestCopyOptionsIgnoreCircularRefs(t *testing.T) {
+	type Node struct {
+		Value int
+		Next  *Node
+	}
+
+	node1 := &Node{Value: 1}
+	node2 := &Node{Value: 2}
+	node1.Next = node2
+	node2.Next = node1
+
+	t.Run("IgnoreCircularRefs stops at cycle instead of preserving it", func(t *testing.T) {
+		dst, err := TryCopyWithOptions(node1, CopyOptions{IgnoreCircularRefs: true})
+		assert.NoError(t, err)
+		assert.NotNil(t, dst)
+		assert.Equal(t, node1.Value, dst.Value)
+		assert.NotNil(t, dst.Next)
+		assert.Equal(t, node2.Value, dst.Next.Value)
+		// With IgnoreCircularRefs=true the back-pointer is not set, so Next.Next is nil.
+		assert.Nil(t, dst.Next.Next)
+	})
 }
