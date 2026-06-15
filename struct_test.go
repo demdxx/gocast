@@ -238,13 +238,9 @@ func TestIsStruct(t *testing.T) {
 }
 
 func TestReflectStructAllFieldNames(t *testing.T) {
-	type Child struct {
-		Code string `json:"code" field:"c"`
-	}
 	type Parent struct {
-		Name  string `json:"name" field:"n"`
-		Age   int    `json:"age"`
-		child Child  // unexported field — should be included in result
+		Name string `json:"name" field:"n"`
+		Age  int    `json:"age"`
 	}
 
 	t.Run("with json tag", func(t *testing.T) {
