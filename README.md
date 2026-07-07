@@ -65,10 +65,10 @@ copied, err := gocast.TryCopy(map[string]any{"key": []int{1, 2, 3}})
 
 Functions follow a consistent naming convention:
 
-| Pattern | Behaviour |
-|---------|-----------|
-| `TryX(v)` | Returns `(T, error)` |
-| `X(v)` | Returns `T`, zero value on error |
+| Pattern            | Behaviour                                           |
+| ------------------ | --------------------------------------------------- |
+| `TryX(v)`          | Returns `(T, error)`                                |
+| `X(v)`             | Returns `T`, zero value on error                    |
 | `XContext(ctx, v)` | Same as above, passes context to `CastSetter` hooks |
 
 ```go
@@ -404,13 +404,13 @@ var ErrWalkStop                      = errors.New("stop field walk")
 
 The following identifiers are deprecated and will be removed in v3:
 
-| Identifier | Replacement |
-|------------|-------------|
-| `MustCopy[T]` | `Copy[T]` |
-| `Float(v)` | `Float64(v)` |
-| `ToUint64ByReflect(v)` | `ReflectToUint64(v)` |
-| `ShallowCopy[T]` | direct assignment |
-| `Any` struct | top-level conversion functions |
+| Identifier                 | Replacement                      |
+| -------------------------- | -------------------------------- |
+| `MustCopy[T]`              | `Copy[T]`                        |
+| `Float(v)`                 | `Float64(v)`                     |
+| `ToUint64ByReflect(v)`     | `ReflectToUint64(v)`             |
+| `ShallowCopy[T]`           | direct assignment                |
+| `Any` struct               | top-level conversion functions   |
 | `ErrCopyCircularReference` | _(never returned; remove usage)_ |
 
 ## Examples
